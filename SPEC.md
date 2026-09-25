@@ -1,0 +1,311 @@
+# Oubliette — spec v0.1
+
+*The design note that seeds this venture, promoted to the repo's spec. Written 2026-09-25 in the
+Tracking-tracker session from the operator's stream of consciousness and the discussion that
+rounded it out; Tracking-tracker keeps the note as its record at `docs/plans/permadeath-mmo.md`.
+This file is the source of truth — decisions (§2), mechanism (§3), what is open (§4), what is
+verified and what is assumed (§5), risks (§6), the v0 line (§7), what happens next (§8). Read it
+in full before changing anything. Nothing is built.*
+
+**Status: EXPLORE → feasibility.** Two load-bearing unknowns, in order: (1) does the economy
+have a stable equilibrium under the sink/source rules in §3.5 — `sim/economy.py` exists to
+settle it; (2) is the core loop fun at $0 — a vertical slice settles that. Two chain facts that
+could have killed the design were measured live before this repo existed (§3.6, §5): the
+randomness primitive is `ArbSys.arbBlockHash`, and RH Chain stock tokens transfer freely today.
+---
+
+## 1. The idea
+
+A top-down, pixel-art, bullet-hell dungeon crawler in the Realm of the Mad God line —
+cooperative, real-time, **permadeath** — where gear is on-chain and **what you die wearing is no
+longer yours.** Gear is minted by burning a fixed amount of the game's token plus some of the
+chain's gas token, and must be *equipped* on chain before it can be taken into a dungeon;
+equipping is the wager. Dungeons end in bosses that are piñatas. Dead players' gear partly
+returns as loot for whoever finishes and partly burns. Alongside the dungeons, an in-game
+exchange priced in the game's token, free to value things as it likes — a Grand Exchange — so
+that the game is **two loops in one**: people who play to delve, and people who play the market,
+each needing the other.
+
+The economics are the novel part. Every play-to-earn game died of inflation: all source, no
+sink. Permadeath is a sink players *choose*, and the drama is the point. Play-to-risk, not
+play-to-earn.
+
+## 2. Decisions taken (operator, 2026-09-25)
+
+| Decision | Choice |
+|---|---|
+| Genre and view | Top-down 2D pixel art, RotMG-style. Low-end hardware; small bug surface; and (§3.4) deterministic by construction. *(Operator said "isometric"; RotMG is top-down. Top-down is cheaper — no depth sorting, 4–8 direction sprites, plain tile maps — and is what is meant here.)* |
+| Death | Permadeath. Equipped gear is lost to the player. **Part** returns to the world as loot; the rest is destroyed. Death is a sink, not a plain one. |
+| Gear | Individual items as NFTs (Loot-style), not sets. Minted by burning a fixed amount of the game token + some gas token. Must be equipped on chain to be at risk / usable. Repairable, **not upgradeable**. Gear system expandable later. |
+| Instances | Sharded simulation, global ledger and global boss (§3.3). Operator accepted this in place of a single global instance. |
+| Boss drops | Gear, consumables, and **external assets (tokenised stock, or stock buckets) — never the game's own token.** Reason: anything paid out in the base token gets sold; the treasury must create no sell pressure on it. |
+| The token | The exchange's unit of account. Tradeable in wallets like any Pons-launched coin. Bought on the market; **burned** by minting, repair and exchange fees; **never emitted** by the game. |
+| Fun at $0 | The core loop must retain players with worthless items. The economy is a layer on top, never the reason to log in. |
+| Two loops | Delvers and merchants, RuneScape-style, harmonious in one game. The exchange is a large part of the product, not a menu. |
+| Chain | Whatever chain it ends up on — current lean RH Chain (§3.6). |
+| First work | Agent-based economy simulation, in the new repo, before a vertical slice. |
+| Scope | Hard v0 line (§7). No scope creep to the point where it never ships. |
+
+## 3. Mechanism
+
+### 3.1 Two loops, one economy
+
+**The delver.** Enter a dungeon with equipped gear, fight through, kill the boss, extract. Die
+and the equipped gear is gone. Progression that survives death lives in two places: the
+**vault** (unequipped gear is safe — only what is on-chain-equipped is at risk) and the
+**account** (unlocks, cosmetics, knowledge, reputation). Something must persist across death or
+players quit after the first one; RotMG's answer was fame, the vault and the pet, and the shape
+holds here.
+
+**The merchant.** Never, or rarely, enters a dungeon. Buys and sells gear and consumables on the
+exchange, arbitrages across time and dungeon releases, stocks repair kits for delvers,
+speculates on which gear the next boss will make valuable. This is the OSRS flipping community
+and the crypto-native audience's natural door. The exchange needs what makes the GE a game:
+price history, volume, item information, and events that move prices.
+
+**How they need each other.** Delvers are the only source of items and the demand for repairs;
+merchants are how a drop becomes liquid and how a delver re-gears after a death. Death removes
+supply, so merchants' inventory appreciates on every death — the market profits from the
+fallen, which is dark and correct. A new dungeon release is a demand shock: the gear that
+counters the new boss reprices, and merchants who read the release notes first win. **Release
+information must therefore be public and simultaneous** — an insider on a dungeon release is the
+same problem as an insider on a listing, and this repo already has the forensics rig for it.
+
+### 3.2 Money: two currencies, two jobs
+
+- **The game token** — bought on Pons / a DEX with ETH; the exchange's unit of account; burned
+  on mint, on repair, and as the exchange fee. The game **never pays it out**. Its supply only
+  falls with use. Demand is "I want to mint, repair or trade"; there is no emission to sell.
+- **The gas token (ETH on RH Chain)** — pays gas; and the ETH portion of every mint fee is the
+  **external-asset treasury**: it buys the tokenised stock (or stock buckets) that bosses drop.
+  This is the operator's "plus some of the gas token" steer doing double duty: it is how bosses
+  can drop something real without the treasury ever selling the game token. Two currencies, two
+  roles, zero sell pressure on the base.
+
+A player's path is fiat/ETH → token → mint or trade. Value leaves the system as burned token
+(a sink, good for holders) and as stock paid to boss-killers (funded by ETH that was never the
+token). Nothing is minted out of thin air except items, and items have sinks.
+
+### 3.3 Sharded simulation, global world
+
+A bullet-hell with a thousand players on screen is unplayable and a true single shard is
+MMO-scale netcode. Shard the *simulation* at ~50–85 players (RotMG's realm cap, for the same
+reason) and make the *world* global:
+
+- one dungeon release, every shard runs it — new dungeons are global events, old ones run at
+  leisure (the operator's instinct, kept);
+- a **world boss** whose health bar is pooled across shards — "the community must deal 40M
+  damage" — so everyone was there;
+- one global loot pool for the boss's drops; one global exchange; one ledger.
+
+Shared narrative without a shared simulation.
+
+### 3.4 Where the chain goes, and why the server can be checked
+
+**Chain:** ownership and the rules of transfer — mint, burn, equip, unequip, drop, trade,
+repair. **Server:** real-time state. The trust problem is that the server decides who died and
+who finished: a trusted oracle in the middle of an economy with real money, which is RotMG's
+duping problem with extra steps unless the server can be checked.
+
+It can. **The server runs a deterministic simulation**: fixed-point maths, integer tile
+physics, a fixed tick, every input logged, and the per-tick randomness seeded from chain block
+hashes. Clients are renderers with prediction — they need no determinism. After a run, anyone
+replays the input log through the same simulation and gets the same deaths and the same drops;
+loot rolls are a function of the replay, so the server cannot pre-know or bias them (the same
+"nobody can run ahead of the chain" as the arena, `connectome-arena.md` §3.2). Determinism
+makes cheating **detectable**, not impossible; the stronger version — independent replayers,
+bonded fraud proofs — comes later if it is ever needed.
+
+This is *easier* than a typical MMO, not harder: no client reconciliation of divergent
+simulations, one authoritative deterministic truth, and a replay file that is simultaneously
+the anti-cheat record, the verification artifact and the spectator feed. It is also the deeper
+reason 2D pixel art is right: no 3D physics engine nondeterminism to fight.
+
+### 3.5 Items: sources and sinks, the whole game in one table
+
+| | Gear (NFT) | Consumables (repair kits, potions) | Cosmetics |
+|---|---|---|---|
+| **Sources** | mint (burn token + ETH); boss drops (part recycled from the dead, part fresh) | boss drops; mint | mint |
+| **Sinks** | **death** (fraction `1 − s` destroyed, `s` recycled as loot — `s ≈ ⅓` to start, the sim decides); **durability** (degrades per run) | burned on use | none — safe forever, a non-risk revenue line |
+| **At risk** | only when on-chain-equipped | when carried | never |
+| **Tradeable** | yes, on the exchange | yes | yes |
+
+Two sinks on gear, one continuous (durability → repair kits → burned token) and one dramatic
+(death). No upgrades: upgrades are a power source and an inflation vector; repair is a sink.
+The recycled fraction `s` is the single most important number in the economy and is the first
+output of the simulation, not a guess.
+
+**Boss drops, distribution:** the recycled gear pool goes to finishers by a lottery weighted by
+contribution and level; the top five or ten share a dice roll for the one or two big items; the
+stock/bucket drop follows the same roll. All rolls are functions of the replay (§3.4) — public,
+unbiasable, and the same lottery-shaped legal question as the arena (§6).
+
+### 3.6 Chain
+
+**RH Chain** (Arbitrum Orbit, chain 4663): ~0.1 s blocks, ~0.13 gwei, permissionless (Pons,
+MOO and FLYBRAIN all deployed there), the operator's ecosystem, and tokenised stocks present for
+the drops. Arc is a worse fit: Circle's compliance-first posture and a permadeath dice-roll game
+are an awkward pair, USDC gas is fine but `PREVRANDAO = 0` makes randomness harder.
+
+**Randomness on RH Chain — measured live on 4663, 2026-09-25** (runtime bytecode injected via
+`eth_call` state override, which this RPC supports, so probe contracts need no deploy):
+`block.number` is the **Ethereum L1** block number — 26,055,153 against an L2 height of
+72,309,222 — and it did not move in 5 s while the L2 advanced 118 blocks; it syncs every
+13–15 s (Arbitrum docs, `block-numbers-and-time.mdx`). `blockhash()` returns a nonzero value
+that matches no L2 block hash: Arbitrum's documented "cryptographically insecure, pseudo-random"
+hash keyed by L1 number (`solidity-support.mdx`). `prevrandao` is the constant 1. So
+"seed each tick from the latest block hash" **cannot** use `blockhash` — one new value every
+~14 s, sequencer-generated. **`ArbSys(0x64).arbBlockHash(n)` returns the real L2 block hash** —
+verified equal to the RPC's hash for two recent blocks — and `arbBlockNumber()` the real L2
+height: one fresh hash per ~0.1 s block, readable *on chain* for the last 256 L2 blocks
+(~25 s), verifiable *off chain* through the RPC forever. That is the primitive. Trust statement,
+stated plainly on the site: L2 block hashes are produced by the sequencer, which is Robinhood;
+unpredictable to everyone else. Stock-token transferability: §5.
+
+### 3.7 The exchange
+
+The GE, not an order book with market clearing at every tick: **offers** (buy X at up to P, sell
+X at no less than P), matched by the contract, with price history public. Priced in the game
+token; the fee burned. Items are NFTs, so listings are escrowed; consumables are fungible or
+semi-fungible (ERC-1155) and trade like commodities. Whether the offer book lives fully on chain
+(0.1 s blocks make this plausible on RH Chain) or as an off-chain book with on-chain settlement
+is an open question for the new repo. So is whether the walkable market-city (stalls, a Grand
+Exchange building) is v1 or later — it is the merchants' *place*, and the place matters to that
+loop the way the dungeon matters to the other. Not v0.
+
+**Reuse:** Vector's fee splitter for the exchange fee; the A1 listing-forensics rig turned on
+the exchange for wash trading and RMT patterns from day one.
+
+## 4. What the operator has not decided, and should not yet
+
+- **Class and combat design** — RotMG has 17 classes; v0 has one. What makes the loop fun at $0
+  is the whole question and it is answered by playing, not by writing.
+- **Death-rate tuning** — the economy's death rate `d` and the game's difficulty are the same
+  dial. The sim says what `d` the economy needs; the vertical slice says whether that `d` is fun.
+- **The stock-bucket mechanism — resolved 2026-09-25.** The model is
+  [otcdesks.cash](https://otcdesks.cash) (Solana), read from its own pages. A launcher where a
+  coin is paired against **a single tokenised stock or a basket of up to ten** (xStocks —
+  AAPLx and the like); its creator fees are claimed automatically and split in one
+  transaction: *most is converted into that reward stock and paid to holders pro-rata*, a
+  share buys and burns the protocol token, a share goes to a "desk pot", a share is kept.
+  **Desks** are NFTs minted with a surcharge whose deposit is burned outright; they earn a
+  share of every product's revenue but *pay nothing until activated*. So "stock bucket" = a
+  basket of up to ten stock tokens that a fee stream is converted into and distributed. For
+  the game: the boss's ETH-side treasury (§3.2) converts into a basket of RH Chain stock tokens
+  and the winners' roll pays out in it. The desk lineage is exact for gear — mint by burning,
+  earns nothing until activated/equipped — and it suggests one optional variant worth a line:
+  rare gear that *captures a share of exchange fees, paid in stock, while equipped*, and is
+  lost on death. Yield you can only hold by risking it. Not v0.
+- **Bot resistance** — RotMG has fought bot farms for a decade; bots farming dungeons is item
+  inflation. Wallet identity plus gas costs rate-limit *on-chain* actions, but the run itself is
+  off chain. Open, and serious.
+- **Exchange mechanism** — on-chain offer book vs off-chain book with on-chain settlement (§3.7).
+- **Engine** — a deterministic fixed-tick server in TypeScript or Rust; a canvas/WebGL client
+  (Phaser or bespoke). Browser-first: RotMG was a Flash game.
+- **Art pipeline** — the bottleneck. Pixel art is the most tractable style for commission or
+  generative-plus-hand-finish; still needs a source and a budget.
+- **What persists across death** beyond the vault — fame, unlocks, cosmetics, a pet?
+
+## 5. Verified vs assumed
+
+Nothing is verified yet; this table exists so the next session fills it the way the arena's was
+filled — every finding with the script or source that proves it.
+
+| Claim | Status |
+|---|---|
+| The economy has a stable equilibrium under §3.5 with some `s`, `d`, mint and repair rates | **first result — sim v0, 800 days, 600 delvers, one seed (2026-09-25).** Full recycling (`s = 1`) inflates at +43–49 %/yr with minting dead and tier-1 gear at 9–10 token. Pure destruction (`s = 0`) at `d0` 0.10–0.20 is near-stable (+8–9 %/yr and falling), minting attractive on 98–100 % of days, 2.1–4.4k token burned/day. `s = ⅓` needs `d0 ≈ 0.20` to approach balance (+13 %/yr, mint attractive 76 %). Separately: fresh boss gear at 35 % of runs inflates *regardless* of `s`/`d0` (~95 fresh items/day against 8–37 deaths) — fresh must be rare (`q_fresh`), recycled loot the common drop; now the default. **Directional, not final:** v0 price rule, merchants implicit, the transient may not be over. Next: 10,000 days, several seeds, a token-price halving | `sim/economy.py` |
+| The loop is fun at $0 | **unverified** — vertical slice |
+| RH Chain `blockhash` usable per §3.4 | **NO — verified 2026-09-25, live.** `block.number` is the L1 number (syncs every 13–15 s; +0 in 5 s while L2 +118), `blockhash()` is an L1-keyed pseudo-random value matching no L2 hash, `prevrandao` = 1. **Use `ArbSys(0x64).arbBlockHash`**: real L2 hashes, verified equal to the RPC's, 256-block on-chain window. Applies to the arena too (`Aothe/upwind` SPEC §3.2) |
+| RH Chain RPC honours `eth_call` state overrides — probe contracts without deploying | **verified** — same probe |
+| Stock tokens on RH Chain transferable to arbitrary addresses | **YES — verified 2026-09-25, live.** SNDK (`0xb90a19ff0af67f7779aff50a882a9cff42446400`, "Sandisk Corporation • Robinhood Token", 18 dec) is an EIP-1967 **beacon proxy** (beacon `0xe10b6f6b…1b00`, implementation `0xb35490d6…5ae2`, 11,614 B) whose implementation exposes `paused()`/`pause()`, AccessControl, `mint`, `permit` and **no blocklist / whitelist / freeze / restrict selectors or strings**; `paused()` = false. Simulated `transfer(1)` succeeds from the MOO pool *and* from an ordinary EOA holder to two never-seen addresses; 2,652 transfers / 487 counterparties in the prior ~5.6 h. **Caveats:** upgradeable through the beacon (Robinhood can add gating later) and pausable — hold stock briefly, pay out promptly, never warehouse it |
+| A deterministic fixed-tick server sustains ~50–85 players per shard at bullet-hell tick rates in the browser | **assumed** from RotMG's realm cap; measure |
+| RotMG realm cap ≈ 85; permadeath + tradeable items → a decade-old RMT market; the loop retains players with worthless items | **from memory** — confirm in the new repo before citing publicly |
+
+## 6. Risks
+
+- **Legal shape.** Permadeath + tradeable value + dice-roll drops is lottery-shaped; NFTs with
+  real value; stock payouts. One counsel pass before contracts are written, same line as the
+  arena. Also: a game with this shape on a *regulated broker's* chain — permissionless or not,
+  the chain operator's tolerance is a question to ask, not assume.
+- **Token-price coupling.** The economy is denominated in the token; if the fun depends on the
+  price, the game's life is the chart. Mitigated only by §2 "fun at $0" being true.
+- **Bots and RMT.** Certain to arrive. §4.
+- **Scope.** The single largest risk. §7.
+- **The server is the operator's.** Verifiability makes cheating detectable; the operator still
+  runs the truth. Say so on the site, as the arena does.
+- **Art.** No art, no game.
+
+## 7. Scope: what v0 is, and is not
+
+**v0 — the vertical slice, the smallest thing that tests "people will burn tokens for gear
+they can lose and trade":** one class · one dungeon · one boss · ~10 gear items across ~3 tiers
+· one shard (~20 players) · permadeath with vault · on-chain mint / equip / unequip / drop ·
+durability + repair kits · a minimal offer-based exchange · deterministic server with replay ·
+browser client, placeholder pixel art.
+
+**Not v0:** stock/bucket drops (the ETH treasury accumulates, unspent) · world boss across
+shards · cosmetics · the market city · crafting · multiple classes · pets · governance ·
+anything called "expanded gear system".
+
+**Before v0:** the economy simulation (§8, step 1). If it finds no equilibrium, v0 is redesigned
+before it is built.
+
+## 8. What happens next
+
+1. **New repo** (name: Appendix A), seeded with this note as `SPEC.md`, a `CLAUDE.md` in the
+   Upwind pattern, and the `feat/` · `fix/` · `update/` · `chore/` conventions.
+2. **Agent-based economy simulation** — Python, a day. *v0 exists (`sim/economy.py`); its first grid is in §5.* Populations of delvers (risk appetite,
+   skill → death rate) and merchants (spread, inventory); mint, burn, death with recycle
+   fraction `s`, durability, repair, trade with fee; token bought exogenously at a price path.
+   Run 10,000 simulated days across a grid of `s`, `d`, mint and repair costs, and a
+   token-price halving. Outputs: item supply over time, token burn rate, gear price in token,
+   whether minting stays attractive, what fraction of value dies vs recycles. **Decides `s` and
+   the fee constants before any pixel.**
+3. **Loop design** — one class, one dungeon, on paper and then in a throwaway prototype; the
+   only question is whether it is fun with worthless items.
+4. **Vertical slice** (§7).
+5. Contracts (gear, exchange, treasury) once 2–4 say the thing is worth building; the RH Chain
+   `blockhash` probe and the stock-transfer check happen first because both can kill the
+   design cheaply.
+
+---
+
+## Appendix A — Name candidates
+
+Short, works as repo + token ticker + site, and says something true about the game. Collisions
+noted where known; trademark search is not possible from this sandbox and must be done before
+choosing.
+
+| Name | Why | Notes |
+|---|---|---|
+| **Oubliette** | A dungeon whose name means *the place of forgetting* (French *oublier*). Permadeath is being forgotten; the dungeon is the game. Distinctive, real, dark in the right way. | Costs a pronunciation (oo-blee-ET). An obscure 1983 PLATO game shares the name. Ticker awkward — pair with a short token name. **My pick for the game.** |
+| **Forfeit** | The mechanic in one word: die and your gear is forfeit. Verb and noun, plain English, honest about the risk. | Best as a ticker ($FORFEIT). Slightly negative framing — which is the point. **My pick if you want plain English, and a strong token name under any game name.** |
+| **Hazard** | The medieval dice game that gave English the word for risk. Permadeath plus dice-roll drops, in one word people already know. | Common word; likely collisions in games and crypto. |
+| **Reliquary** | Where relics of the dead are kept. Dead players' gear becomes relics others claim; the exchange is the reliquary. Elegant, fits the merchant loop especially. | Long. |
+| **Spoils** | Loot — and *to spoil* is to go bad, which is what your gear does when you die. Short, double meaning. | Generic-ish. |
+| **Undercroft** | The vault beneath. Where the exchange and the market-city would live. | Better for the city than the game. |
+| **Ossuary** | The bone-house. Darker than Oubliette; same idea with less mystery. | Grim. |
+
+Avoid: *Hardcore* (a mode name everywhere), *Bazaar* (Rare's 2024 game), *Relic* (Relic
+Entertainment), *Stake* (crypto collision), *Delve* (widely used).
+
+## Appendix B — Considered and rejected
+
+| Idea | Why not |
+|---|---|
+| Single global simulation | Unplayable at bullet-hell density; MMO-scale netcode; unverifiable. Shard the sim, globalise the world (§3.3). |
+| Dropped gear fully recycled as loot | Removes the only sink; item supply only grows; prices → 0; minting stops; the token loses its sink. Partial recycle + durability (§3.5). |
+| Bosses dropping the game token | Every payout gets sold; the treasury becomes sell pressure. Operator's rule: never. Stock/buckets funded by the ETH side (§3.2). |
+| Gear upgrades | A power source and an inflation vector. Repair only. |
+| Play-to-earn emissions | The thing that killed the genre. The game emits items, never the token. |
+| Isometric / 3D | Cost, bug surface, and nondeterminism. Top-down 2D (§2, §3.4). |
+| Building the game first | The engine is known technology and the fun is proven by RotMG; the economy is the unknown and the killer. Simulate it first (§8). |
+
+## Appendix C — Related
+
+- `connectome-arena.md` §3.2 (seed the sim from block hashes), §3.5 (external-asset pool,
+  stock-token transfer caveat) — reused here verbatim; now the spec of `Aothe/upwind`.
+- B15 in `rh-chain-venture-ideas.md` — the cousin: fee-funded strategies inside *other* games'
+  economies. This one owns an economy.
+- Vector (`Aothe/vector`) — fee splitter; `Aothe/Tracking-tracker` — the A1 forensics rig for
+  the exchange.
