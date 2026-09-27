@@ -20,8 +20,12 @@ not play-to-earn: permadeath is the sink the genre never had.
 - Python 3.11 for the simulations (`requirements.txt`, venv at `.venv`). No game engine, no
   service, no contracts yet. `contracts/` (Foundry) and `game/` come later and are not started.
 - `sim/` is the economy: agent-based, seeded, fast. `sim/out/` is gitignored.
-- Status: SPEC written 2026-09-25; `sim/economy.py` v0 exists and its first grid is in SPEC §5 (full recycling inflates; pure destruction is near-stable; fresh boss gear must be rare). Nothing else built. Step one is finding the recycle fraction and
-  death rate at which item supply stabilises with minting still worth doing (SPEC §8).
+- Status: SPEC written 2026-09-25; `sim/economy.py` v0 exists and its 10,000-day, 5-seed sweep
+  (`--sweep`, 228 runs) is in SPEC §5: supply is stable iff `(1 − s)·deaths > fresh drops` — flat
+  at `s = 0`, `d0` 0.10–0.20; flat in circulation only at `s = ⅓` (nothing in v0 buys t2/t3);
+  `s ≥ ⅔` and `d0 = 0.05` fail. No budget ever binds in v0, so the halving and the mint/repair
+  costs move only balances and burn: the fee constants and price coupling are still open. Nothing
+  else built. Next: a sim with a binding budget, explicit merchants and demand for every tier (SPEC §8).
 
 ## Commands
 
@@ -30,6 +34,7 @@ python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
 .venv/bin/python sim/economy.py                        # s x d0 grid, 2,000 days, summary table
 .venv/bin/python sim/economy.py --days 10000           # the long run
 .venv/bin/python sim/economy.py --single --s 0.33 --d0 0.1 --halve-at 1000 --plot   # one config + figure
+.venv/bin/python sim/economy.py --sweep                # SPEC §8 step 2: 228 runs x 10,000 days, ~7 min on 8 workers; tail -f sim/out/sweep.log
 ```
 
 ## Working agreements
