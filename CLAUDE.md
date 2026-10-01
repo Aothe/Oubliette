@@ -12,7 +12,7 @@ not play-to-earn: permadeath is the sink the genre never had.
 
 **Orientation for a new session — read in this order:**
 1. `SPEC.md` — what the system is, what has been decided, what has been shown.
-2. `sim/economy.py` — the docstring, then run it. The economy is the first unknown.
+2. `sim/economy.py`, then `sim/economy2.py` (v1) — the docstrings, then run them. The economy is the first unknown.
 3. This file's "hard-won knowledge" — facts measured before this repo existed.
 
 ## Quick orientation
@@ -24,8 +24,14 @@ not play-to-earn: permadeath is the sink the genre never had.
   (`--sweep`, 228 runs) is in SPEC §5: supply is stable iff `(1 − s)·deaths > fresh drops` — flat
   at `s = 0`, `d0` 0.10–0.20; flat in circulation only at `s = ⅓` (nothing in v0 buys t2/t3);
   `s ≥ ⅔` and `d0 = 0.05` fail. No budget ever binds in v0, so the halving and the mint/repair
-  costs move only balances and burn: the fee constants and price coupling are still open. Nothing
-  else built. Next: a sim with a binding budget, explicit merchants and demand for every tier (SPEC §8).
+  costs move only balances and burn. `sim/economy2.py` is v1 (2026-09-27; v0 stays frozen as the
+  artifact of its §5 row): closed token ledger asserted exact daily, binding budgets (39 % of
+  runner-days priced out at baseline), explicit merchants, t2/t3 demand, the §3.5 lottery; its
+  427-run `--sweep` is in SPEC §5. Nothing inflates once budgets bind; `s = ⅓` is viable at `d0`
+  0.10 and robust at 0.20. The fee test is negative (0/90 cells): mint cost sets participation,
+  repair is a near-free sink, the fee is paid by merchants. A 2× token-price move re-equilibrates
+  but participation tracks the price. Nothing else built. Next: SPEC §8 step 3, or a v2 sim for
+  the gaps §8 step 2 lists (token cash-out, learned merchant spreads, a wealth effect on demand).
 
 ## Commands
 
@@ -35,6 +41,8 @@ python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
 .venv/bin/python sim/economy.py --days 10000           # the long run
 .venv/bin/python sim/economy.py --single --s 0.33 --d0 0.1 --halve-at 1000 --plot   # one config + figure
 .venv/bin/python sim/economy.py --sweep                # SPEC §8 step 2: 228 runs x 10,000 days, ~7 min on 8 workers; tail -f sim/out/sweep.log
+.venv/bin/python sim/economy2.py --sweep               # v1: budgets, merchants, fees, coupling, lottery; 427 runs x 10,000 days, ~10 min; tail -f sim/out/sweep2.log
+.venv/bin/python sim/economy2.py --single --s 0.33 --d0 0.1 --fee 0.05   # one v1 config, 2,000 days, summary line
 ```
 
 ## Working agreements
