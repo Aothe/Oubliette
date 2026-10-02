@@ -84,6 +84,11 @@ button:focus-visible{outline:2px solid var(--verdigris);outline-offset:3px}
 .meter.cool i{background-color:var(--verdigris);background-image:none}
 .hold{display:block;width:100%;margin-top:8px;font-size:16px;touch-action:none;user-select:none;-webkit-user-select:none}
 .hold.on{border-color:var(--verdigris);color:var(--verdigris)}
+.hold.shut{border-style:dashed;color:var(--stone-4);cursor:default}
+.hold.shut:hover{background:var(--void)}
+.skills.locked button:not(.on){opacity:.4;cursor:default}
+.skills.locked button:not(.on):hover{background:var(--void)}
+.skillnote{margin:8px 0 0;font-size:15px;line-height:1.15;color:var(--mute)}
 
 .plate h2,.notes h2{margin:0 0 4px;font-family:var(--display);font-weight:400;font-size:38px;line-height:1}
 .plate>p,.notes>p{margin:0 0 16px;color:var(--mute);max-width:65ch}
@@ -131,8 +136,8 @@ button:focus-visible{outline:2px solid var(--verdigris);outline-offset:3px}
         <li><b>WASD / arrows</b> move</li>
         <li><b>Mouse</b> aim, hold to fire</li>
         <li><b>F</b> auto-fire</li>
-        <li><b>Space</b> skill, <b>1 2 3</b> to choose</li>
-        <li><b>R</b> hold three seconds to recall; a hit breaks it</li>
+        <li><b>Space</b> your skill; <b>1 2 3</b> choose it in the entry hall</li>
+        <li><b>R</b> hold three seconds to recall; a hit breaks it; none at the boss</li>
         <li><b>Touch</b> drag to move, bolts aim themselves</li>
       </ul>
     </div>
@@ -146,6 +151,7 @@ button:focus-visible{outline:2px solid var(--verdigris);outline-offset:3px}
         <h2>Skill <span id="skillNum">Space</span></h2>
         <div class="skills" id="skills"></div>
         <div class="meter cool"><i id="skillFill" style="width:100%"></i></div>
+        <p class="skillnote" id="skillNote">One skill per delve. Choose it in the entry hall.</p>
         <button type="button" class="hold" id="recallBtn">Hold R to recall</button>
       </section>
       <section>
@@ -187,6 +193,8 @@ button:focus-visible{outline:2px solid var(--verdigris);outline-offset:3px}
           <li>One class, one dungeon, one boss, ten gear items across three tiers.</li>
           <li>Death splits what you wagered: each piece has a one-in-three chance of returning to the boss pool, and burns otherwise.</li>
           <li>The boss is a piñata. It drops fresh gear plus what the dead put in the pool.</li>
+          <li>One skill per delver, wagered and lost like any other piece.</li>
+          <li>You may recall before the boss, never at him. The loot is for those who lock in.</li>
         </ul>
       </div>
       <div>
@@ -196,8 +204,8 @@ button:focus-visible{outline:2px solid var(--verdigris);outline-offset:3px}
           <li>The Turnkey, his three phases, every enemy number, every item name and stat.</li>
           <li>Loot you are carrying is left behind when you die. The spec has no rule for it yet.</li>
           <li>Boss drops fall as bags to pick up. The spec's weighted lottery is not modelled.</li>
-          <li>One skill at a time: Slip, Mend or Sunder. In the game a skill would be a wagered item.</li>
-          <li>Recall: three seconds, broken by any hit. It saves what you wagered and leaves what you carried, so only the seal pays.</li>
+          <li>The three skills and their items: Slip (Moth Feather), Mend (Moss Poultice), Sunder (Breaker's Maul). Minting one is free here.</li>
+          <li>Recall's numbers: three seconds, broken by any hit. It saves what you wagered and leaves what you carried, so only the seal pays.</li>
         </ul>
       </div>
       <div>
@@ -417,6 +425,45 @@ const KEY=[
 "............",
 "............",
 "............"];
+const FEATHER=[
+"........kkk.",
+".......kTTTk",
+"......kTT#Tk",
+".....kTT#Tk.",
+"....kTT#Tk..",
+"...ktT#Tk...",
+"...kttTk....",
+"..kwkkk.....",
+".kwk........",
+"kwk.........",
+"kk..........",
+"............"];
+const POULTICE=[
+"............",
+".....kk.....",
+"....kHHk....",
+"...kHhHHk...",
+"...kHHhHk...",
+"..kkkkkkkk..",
+".kWWWWWWWWk.",
+".kWlWWWWWWk.",
+"..kWWWWWWk..",
+"...kwwwwk...",
+"....kkkk....",
+"............"];
+const MAUL=[
+"............",
+"..kkkkkkk...",
+".kMMMMMMMk..",
+".kmMMMMMmk..",
+".kmmmmmmmk..",
+"..kkkWkkk...",
+"....kWk.....",
+"....kWk.....",
+"....kWk.....",
+"....kwk.....",
+"....kkk.....",
+"............"];
 const FLASK=[
 "....kkkk....",
 "....kwwk....",
@@ -452,8 +499,8 @@ function whiten(c){const o=cv(c.width,c.height),g=o.getContext('2d');g.drawImage
 function bundle(c){const w=whiten(c);return {c:c,f:flipH(c),w:w,wf:flipH(w)};}
 function mulberry(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
 
-/* ---------- items: ten gear pieces, three tiers ---------- */
-const SLOTS=['Weapon','Armour','Ring','Relic'];
+/* ---------- items: ten gear pieces in three tiers, and three skill items ---------- */
+const SLOTS=['Weapon','Armour','Ring','Relic','Skill'];
 const ROMAN=['','I','II','III'];
 const ITEMS={
   wand1:{id:'wand1',slot:0,tier:1,name:'Tallow Wand',art:[WAND,{A:'y'}]},
@@ -465,8 +512,12 @@ const ITEMS={
   ring1:{id:'ring1',slot:2,tier:1,name:'Tin Band',art:[RING,{A:'6',a:'m','#':'M'}]},
   ring2:{id:'ring2',slot:2,tier:2,name:'Signet of the Watch',art:[RING,{A:'e',a:'g','#':'Y'}]},
   ring3:{id:'ring3',slot:2,tier:3,name:'Ring of the Forgotten',art:[RING,{A:'T',a:'G'}]},
-  key3:{id:'key3',slot:3,tier:3,name:"The Turnkey's Key",art:[KEY,null]}
+  key3:{id:'key3',slot:3,tier:3,name:"The Turnkey's Key",art:[KEY,null]},
+  slip1:{id:'slip1',slot:4,tier:1,skill:0,name:'Moth Feather',art:[FEATHER,null]},
+  mend1:{id:'mend1',slot:4,tier:1,skill:1,name:'Moss Poultice',art:[POULTICE,null]},
+  sunder1:{id:'sunder1',slot:4,tier:1,skill:2,name:"Breaker's Maul",art:[MAUL,null]}
 };
+const SKILLIDS=['slip1','mend1','sunder1'];
 const BYTIER={1:['wand1','robe1','ring1'],2:['wand2','robe2','ring2'],3:['wand3','robe3','ring3']};
 
 /* ---------- build sprites ---------- */
@@ -557,7 +608,7 @@ function prerender(rng){
 }
 
 /* ---------- state ---------- */
-let G=null,wager=[null,null,null,null],carried=[];
+let G=null,wager=[null,null,null,null,null],carried=[];
 const stage=$('stage'),canvas=$('game'),ctx=canvas.getContext('2d');
 const buf=cv(320,200),bx=buf.getContext('2d'),dk=cv(320,200),dctx=dk.getContext('2d');
 let zoom=2;
@@ -568,7 +619,8 @@ const EDEF={
   gaoler:{hp:150,spd:17,keep:44,hr:7,fire:2.7}
 };
 const NAMES=['Vell','Odric','Tamsin'];
-/* one skill at a time, on Space; cd in ticks. Recall is the way out that pays nothing. */
+/* One skill per delver, carried as a wagered item and chosen in the entry hall; cd in ticks.
+   Recall is the way out that pays nothing, and there is none once the Turnkey wakes. */
 const SKILLS=[{name:'Slip',cd:150,note:'dash through bolts'},{name:'Mend',cd:540,note:'heal all nearby'},{name:'Sunder',cd:360,note:'a heavy strike'}];
 const RECALL=180;
 let skillSel=0,skillHit=false;
@@ -579,11 +631,12 @@ function log(s){G.log.unshift(s);if(G.log.length>5)G.log.pop();hudDirty=true;}
 
 function newRun(seed,fresh){
   seed=seed>>>0;const rng=mulberry(seed);
-  if(fresh)wager=[mk('wand1',rng),mk('robe1',rng),mk('ring1',rng),null];
+  if(fresh)wager=[mk('wand1',rng),mk('robe1',rng),mk('ring1',rng),null,null];
+  if(!wager[4]||wager[4].d.skill!==skillSel)wager[4]={d:ITEMS[SKILLIDS[skillSel]],dur:90};   /* no rng: the seed's dungeon must not move */
   carried=[];genMap(rng);
   const r0=rooms[0],sx=(r0.cx+.5)*16,sy=(r0.cy+.5)*16;
   G={seed:seed,rng:rng,tick:0,state:'play',bullets:[],bags:[],parts:[],texts:[],graves:[],enemies:[],allies:[],log:[],pool:0,
-     shake:0,flash:0,portal:null,portalAt:0,cam:{x:sx,y:sy},camx:0,camy:0,st:stats(),rolls:null,deadAt:0,full:0};
+     shake:0,flash:0,locked:false,nag:0,portal:null,portalAt:0,cam:{x:sx,y:sy},camx:0,camy:0,st:stats(),rolls:null,deadAt:0,full:0};
   G.player={x:sx,y:sy,hw:4,hh:3,hp:G.st.maxhp,face:1,cd:0,flash:0,moving:false,skin:0,dead:false,name:'You',scd:0,scdMax:1,dash:0,ddx:0,ddy:0,recall:0,rlock:0};
   skillHit=false;
   const off=[[-16,-10],[14,-12],[-4,16]];
@@ -620,7 +673,10 @@ function updatePlayer(P){
   if(touch){ix=touch.dx;iy=touch.dy;}
   const l=Math.hypot(ix,iy);P.moving=l>.15;
   if(P.scd>0)P.scd--;if(P.rlock>0)P.rlock--;
-  const rec=!!keys.r&&P.rlock<=0&&P.dash<=0;
+  const r0=rooms[0],B0=G.boss;
+  if(!G.locked&&(P.x<r0.x*16||P.x>=(r0.x+r0.w)*16||P.y<r0.y*16||P.y>=(r0.y+r0.h)*16)){G.locked=true;hudDirty=true;log('You leave the hall with '+wager[4].d.name+'. '+SKILLS[skillSel].name+' is locked in.');}
+  if(keys.r&&B0.awake&&G.tick-G.nag>70){G.nag=G.tick;addText(P.x,P.y-32,B0.dead?'Use the seal':'No way back',PAL.e,60);}
+  const rec=!!keys.r&&P.rlock<=0&&P.dash<=0&&!B0.awake;
   if(P.dash>0){P.dash--;tryMove(P,P.ddx*5.5,P.ddy*5.5);if(!RM)puff(P.x,P.y-5,1,[PAL.T,PAL.t],.3,10);}
   else if(P.moving){const sp=64/60*Math.min(1,touch?l:1)*(rec?.5:1);tryMove(P,ix/l*sp,iy/l*sp);}
   let ax=null,ay=0;
@@ -634,12 +690,16 @@ function updatePlayer(P){
   if(want&&P.cd<=0){P.cd=st.rate*60;shoot(P.x,P.y-5,Math.atan2(ay-(P.y-5),ax-P.x),178,st.bolt,st.dmg,0,46);}
   P.hp=Math.min(st.maxhp,P.hp+2/60);if(P.flash>0)P.flash--;
   const B=G.boss,br=rooms[5];
-  if(!B.awake&&!B.dead&&P.x>(br.x+1)*16&&P.y>br.y*16&&P.y<(br.y+br.h)*16){B.awake=true;addText(B.x,B.y-44,'The Turnkey wakes',PAL.o,110);log('The Turnkey wakes.');G.shake=5;}
+  if(!B.awake&&!B.dead&&P.x>(br.x+1)*16&&P.y>br.y*16&&P.y<(br.y+br.h)*16){B.awake=true;addText(B.x,B.y-44,'The Turnkey wakes',PAL.o,110);log('The Turnkey wakes. No recall now: break him or be forgotten.');G.shake=5;hudDirty=true;}
   for(let i=G.bags.length-1;i>=0;i--){const b=G.bags[i];if(b.t<24)continue;const dx=b.x-P.x,dy=b.y-P.y;if(dx*dx+dy*dy>144)continue;
     if(!b.item){P.hp=Math.min(st.maxhp,P.hp+40);addText(P.x,P.y-20,'+40',PAL.H);G.bags.splice(i,1);}
     else if(carried.length<8){carried.push(b.item);addText(P.x,P.y-22,'+'+b.item.d.name,b.item.d.tier===3?PAL.T:b.item.d.tier===2?PAL.o:PAL.b,80);G.bags.splice(i,1);hudDirty=true;}
     else if(G.tick-G.full>90){G.full=G.tick;addText(P.x,P.y-22,'Pack full',PAL['6'],50);}}
   if(G.portal){const dx=G.portal.x-P.x,dy=G.portal.y-P.y;if(dx*dx+dy*dy<120)extract();}
+}
+function pickSkill(i){
+  if(G.state==='play'&&G.locked){if(i!==skillSel&&G.tick-G.nag>50){G.nag=G.tick;addText(G.player.x,G.player.y-32,'Locked in',PAL['6'],50);}return;}
+  skillSel=i;if(G.state==='play')wager[4]={d:ITEMS[SKILLIDS[i]],dur:wager[4]?wager[4].dur:90};hudDirty=true;
 }
 function useSkill(P,ix,iy,l,ax,ay){
   const k=SKILLS[skillSel];P.scd=P.scdMax=k.cd;
@@ -910,13 +970,15 @@ function el(tag,cls,txt){const e=document.createElement(tag);if(cls)e.className=
 function rebuildHud(){
   const wl=$('wagerList');wl.textContent='';
   wager.forEach((it,i)=>{const li=el('li',it?'t'+it.d.tier:'empty'),ic=el('div','ico'),body=el('div');
-    if(it){ic.append(iconEl(S.icon[it.d.id],3));body.append(el('span','nm',it.d.name),el('span','meta',SLOTS[i]+' · tier '+ROMAN[it.d.tier]+' · '+it.dur+'% sound'));
+    if(it){ic.append(iconEl(S.icon[it.d.id],3));body.append(el('span','nm',it.d.name),el('span','meta',(it.d.skill!==undefined?'Skill · '+SKILLS[it.d.skill].name:SLOTS[i]+' · tier '+ROMAN[it.d.tier])+' · '+it.dur+'% sound'));
       const dur=el('i','dur'),f=el('i');f.style.width=it.dur+'%';dur.append(f);body.append(dur);}
     else body.append(el('span','nm','Nothing wagered'),el('span','meta',SLOTS[i]));
     li.append(ic,body);wl.append(li);});
-  const sk=$('skills');sk.textContent='';
+  const sk=$('skills'),lk=G.state==='play'&&G.locked;sk.textContent='';sk.className='skills'+(lk?' locked':'');
   SKILLS.forEach((k,i)=>{const b=el('button',i===skillSel?'on':'');b.type='button';b.append(el('b','',(i+1)+' '+k.name),document.createTextNode(k.note));
-    b.onclick=function(){if(i===skillSel)skillHit=true;else{skillSel=i;hudDirty=true;}canvas.focus();};sk.append(b);});
+    b.onclick=function(){if(i===skillSel&&G.state==='play')skillHit=true;else pickSkill(i);canvas.focus();};sk.append(b);});
+  $('skillNote').textContent=lk?'Locked in for this delve.':'One skill per delve. Choose it in the entry hall.';
+  const rb=$('recallBtn'),shut=G.boss.awake;rb.textContent=shut?'No recall at the Turnkey':'Hold R to recall';rb.classList.toggle('shut',shut);
   const bag=$('bag');bag.textContent='';
   for(let i=0;i<8;i++){const c=el('div');if(carried[i]){c.append(iconEl(S.icon[carried[i].d.id],2));c.title=carried[i].d.name+' (tier '+ROMAN[carried[i].d.tier]+')';}bag.append(c);}
   const lg=$('log');lg.textContent='';for(const s of G.log)lg.append(el('li','',s));
@@ -948,7 +1010,7 @@ function buildSheet(){
   row('Tiles and props',[['Flagstone',TILES.floor[0]],['Cracked',TILES.floor[3]],['Mossed',TILES.floor[4]],['Wall face',TILES.face[0]],['Wall top',TILES.top],['Torch',S.torch[0]],['',S.torch[1]],['',S.torch[2]],['Gravestone',S.grave],['Bag, tier I',S.bag[1]],['Tier II',S.bag[2]],['Tier III',S.bag[3]],['Draught',S.flask]]);
   row('Projectiles: diamonds are yours, orbs are theirs',[['Bolt I',S.b.bolt1,6],['Bolt II',S.b.bolt2,6],['Bolt III',S.b.bolt3,6],['Other delvers',S.b.ally,6],['Forgotten',S.b.bone,6],['Shade',S.b.purple,6],['Gaoler',S.b.red,6],['Turnkey',S.b.orange,6],['Turnkey, heavy',S.b.big,6]]);
   const gear=[];for(const id in ITEMS)gear.push([ITEMS[id].name+' · '+ROMAN[ITEMS[id].tier],S.icon[id]]);
-  row('Gear: ten items, three tiers',gear);
+  row('Gear: ten items in three tiers, and three skill items',gear);
   const wrap=el('div'),sw=el('div','swatches');wrap.append(el('h3','','Palette: '+Object.keys(PAL).length+' colours'),sw);
   for(const k in PAL){const d=el('div'),i=el('i');i.style.background=PAL[k];d.append(i,document.createTextNode(PALNAMES[k]));sw.append(d);}
   root.append(wrap);
@@ -961,7 +1023,7 @@ window.addEventListener('keydown',function(e){const k=e.key.toLowerCase();
   if((ae===canvas&&k.indexOf('arrow')===0)||(k===' '&&(ae===canvas||ae===document.body||!ae)))e.preventDefault();
   if(e.metaKey||e.ctrlKey||e.altKey)return;
   keys[k]=true;
-  if(!e.repeat){if(k==='f')autoFire=!autoFire;else if(k===' ')skillHit=true;else if(k==='1'||k==='2'||k==='3'){skillSel=+k-1;hudDirty=true;}}
+  if(!e.repeat){if(k==='f')autoFire=!autoFire;else if(k===' ')skillHit=true;else if(k==='1'||k==='2'||k==='3')pickSkill(+k-1);}
   started();});
 window.addEventListener('keyup',function(e){keys[e.key.toLowerCase()]=false;});
 window.addEventListener('blur',function(){for(const k in keys)keys[k]=false;mouseDown=false;});
@@ -994,7 +1056,7 @@ function start(){
   if(window.ResizeObserver)new ResizeObserver(resize).observe(stage);else window.addEventListener('resize',resize);
   window.__oub={get G(){return G;},rooms:function(){return rooms;},
     warp:function(i){const r=rooms[i],x=(r.cx+.5)*16-(i===5?70:0),y=(r.cy+.5)*16;G.player.x=x;G.player.y=y;G.cam.x=x;G.cam.y=y;for(const a of G.allies){a.x=x+a.ox;a.y=y+a.oy;}},
-    hurt:function(n){hurtDelver(G.player,n);},boss:function(hp){G.boss.hp=hp;},skill:function(i){skillSel=i;skillHit=true;hudDirty=true;},give:function(id){carried.push(mk(id,G.rng));hudDirty=true;}};
+    hurt:function(n){hurtDelver(G.player,n);},boss:function(hp){G.boss.hp=hp;},skill:function(i){pickSkill(i);skillHit=true;},give:function(id){carried.push(mk(id,G.rng));hudDirty=true;}};
   requestAnimationFrame(frame);
 }
 if(window.claude&&window.claude.hot&&window.claude.hot.ready)window.claude.hot.ready(start);else start();

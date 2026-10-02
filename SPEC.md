@@ -45,6 +45,8 @@ play-to-earn.
 | Chain | Whatever chain it ends up on — current lean RH Chain (§3.6). |
 | First work | Agent-based economy simulation, in the new repo, before a vertical slice. |
 | Scope | Hard v0 line (§7). No scope creep to the point where it never ships. |
+| Skills | One ability per delver per run, carried as a wagered item: minted, traded and lost on death like the rest. One each, so a party has to coordinate. *(Operator, 2026-10-02.)* |
+| Leaving early | A delver may recall before the boss, never at it — "you have to 'lock-in' to the boss if you want the loot". Recall saves what was wagered and none of what was picked up, so a short loop earns nothing and costs wear. *(Operator, 2026-10-02.)* |
 
 ## 3. Mechanism
 
@@ -209,22 +211,14 @@ the exchange for wash trading and RMT patterns from day one.
   generative-plus-hand-finish; still needs a source and a budget. Placeholder art for v0 can be
   drawn in code (§5, `proto/visual/`); art direction and anything illustrated still need both.
 - **What persists across death** beyond the vault — fame, unlocks, cosmetics, a pet?
-- **Skills** — operator, 2026-10-02: the dash "could be a skill, with other skills also
-  available like an AOE heal or a special strike". Under test in the slice (`proto/visual/`):
-  one skill at a time on a cooldown — Slip (a dash through bolts), Mend (heals every delver
-  nearby), Sunder (a heavy strike). Proposal, not decided: a skill is a wagered item (the relic
-  slot), so it is minted, traded and lost like the rest and fits v0's ten items without a second
-  class. Open: item or class; and Mend lowers the death rate the economy needs (§5), so it has to
-  be measured before it is kept.
-- **Recall — a way out before the boss** — operator, 2026-10-02: "interesting", with the worry
-  that people "do 1 room, recall, do 1 room, recall, repeat ad nauseum to print money". The worry
-  is right wherever leaving early banks loot: a reward with no risk attached is the inflation of
-  §5's first result, whoever farms it, person or bot. Rule under test in the slice: recall takes
-  three seconds, any hit breaks it, and it saves what you wagered and nothing you picked up —
-  **only the seal behind the boss pays**. A short loop then earns nothing and costs wear. Not
-  taken: recall with loot (the farm); gear from the boss alone (kills the bags the slice's rooms
-  drop). Open: recall lowers deaths — the 7–14 % the economy needs (§5) must be re-measured with
-  people; whether three seconds is right; whether it is allowed in the boss room.
+- **Skills and recall — decided in §2, the numbers are not.** In the slice (`proto/visual/`):
+  three skill items — Slip (a dash through bolts), Mend (heals every delver nearby), Sunder (a
+  heavy strike) — chosen in the entry hall and locked once the delver leaves it; recall takes
+  three seconds, any hit breaks it, and it is shut from the moment the boss wakes. Open: which
+  skills and how many; whether skill items have tiers and drop; cooldowns; three seconds or not.
+  Both Mend and recall lower deaths, so the 7–14 % of runs the economy needs to end in a death
+  (§5) has to be re-measured with people. Why recall pays nothing: a reward with no risk
+  attached is the inflation of §5's first result, whoever farms it, person or bot.
 
 ## 5. Verified vs assumed
 
@@ -261,6 +255,7 @@ filled — every finding with the script or source that proves it.
 
 **v0 — the vertical slice, the smallest thing that tests "people will burn tokens for gear
 they can lose and trade":** one class · one dungeon · one boss · ~10 gear items across ~3 tiers
+· one skill per delver, a wagered item · a recall that pays nothing and stops at the boss
 · one shard (~20 players) · permadeath with vault · on-chain mint / equip / unequip / drop ·
 durability + repair kits · a minimal offer-based exchange · deterministic server with replay ·
 browser client, placeholder pixel art.
