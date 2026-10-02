@@ -91,6 +91,10 @@ python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
 - Sandbox egress blocked when this was written: `docs.arbitrum.io`, `api.github.com`, most
   journals. Reachable: `raw.githubusercontent.com`, `github.com` (git), `storage.googleapis.com`,
   the RH Chain RPC (via curl; Python `urllib` fails the proxy handshake — use curl or requests).
+  **Re-measured 2026-10-01: much looser** — `api.github.com` works (`gh pr create`/`merge` used
+  for PRs #1–2), `pypi.org` + `bootstrap.pypa.io` install packages, and web search/fetch
+  succeed (the §5 RotMG row and the Appendix A name scan came from it). Re-test before relying
+  on a specific host; the list above is the historical floor.
 
 ## Hard guardrails
 
