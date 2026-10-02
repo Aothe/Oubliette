@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Oubliette Art Bank</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jacquard+24&family=Jersey+15&display=swap">
+<style>
+/* Layout: a specimen book. Five dungeons as plates up front, then drawers of sprites, each sprite a card holding all its looks. */
+:root{
+  color-scheme:dark;
+  --void:#0d0b14; --stone-1:#17141f; --stone-2:#25212f; --stone-3:#363145; --stone-4:#4c4660; --mute:#9390a3;
+  --bone:#d9cfb4; --verdigris:#5fd1b5; --verdigris-deep:#1c5a5a; --ember:#e8822e; --gold:#f2cf5e;
+  --display:'Jacquard 24','Old English Text MT',Georgia,serif;
+  --ui:'Jersey 15',ui-monospace,'Courier New',monospace;
+}
+[hidden]{display:none!important}
+html,body{background:var(--void)}
+body{margin:0;color:var(--bone);font-family:var(--ui);font-size:19px;line-height:1.25;font-weight:400;font-synthesis:none}
+b,strong,h1,h2,h3{font-weight:400}
+.page{max-width:1200px;margin-inline:auto;padding-inline:16px;padding-block:20px 64px;display:flex;flex-direction:column;gap:34px}
+.mast{display:flex;flex-direction:column;gap:6px}
+.mast .name{display:flex;flex-wrap:wrap;align-items:baseline;gap:0 16px}
+h1{font-family:var(--display);font-size:clamp(46px,7vw,76px);line-height:.9;margin:0;text-shadow:3px 3px 0 var(--verdigris-deep)}
+.mast .sub{font-family:var(--display);font-size:clamp(28px,4vw,40px);line-height:1;color:var(--verdigris)}
+.mast p{margin:0;color:var(--mute);max-width:66ch}
+.stats{display:flex;flex-wrap:wrap;gap:4px 22px;margin:6px 0 0;padding:0;list-style:none;font-variant-numeric:tabular-nums}
+.stats b{color:var(--gold);font-size:26px;margin-right:5px}
+section>h2{margin:0 0 2px;font-family:var(--display);font-size:38px;line-height:1}
+section>p{margin:0 0 14px;color:var(--mute);max-width:66ch}
+.px{image-rendering:pixelated;display:block}
+.tag{display:inline-block;padding:0 6px;border:2px solid currentColor;font-size:14px;line-height:1.25;letter-spacing:.08em;text-transform:uppercase}
+.tag.in{color:var(--verdigris)} .tag.banked{color:var(--mute)}
+
+.plates{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:22px 20px}
+.plate{display:flex;flex-direction:column;gap:8px;min-width:0}
+.plate canvas{width:100%;height:auto;border:2px solid var(--stone-4);background:var(--void)}
+.plate h3{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;margin:0;font-size:24px;line-height:1}
+.plate p{margin:0;color:var(--mute);font-size:17px;line-height:1.15}
+.plate .cast{color:var(--bone)}
+
+.drawer{display:flex;flex-wrap:wrap;gap:12px;align-items:stretch}
+.card{display:flex;flex-direction:column;gap:8px;padding:9px 10px;background:var(--stone-1);border:2px solid var(--stone-3);min-width:0}
+.card.in{border-color:var(--verdigris-deep)}
+.card header{display:flex;flex-wrap:wrap;align-items:center;gap:2px 8px;font-size:16px;line-height:1.1;color:var(--mute)}
+.card header b{color:var(--bone);font-size:18px}
+.looks{display:flex;flex-wrap:wrap;gap:10px 12px;align-items:flex-start}
+.looks figure{margin:0;display:flex;flex-direction:column;gap:4px;align-items:flex-start}
+.looks .cell{background:var(--stone-2);padding:5px}
+.looks figcaption{font-size:14.5px;line-height:1.05;color:var(--mute);max-width:13ch}
+figcaption.t2{color:var(--ember)} figcaption.t3{color:var(--verdigris)}
+
+.swatches{display:grid;grid-template-columns:repeat(auto-fill,minmax(64px,1fr));gap:6px}
+.swatches div{font-size:14px;line-height:1.1;color:var(--mute)}
+.swatches i{display:block;height:26px;border:2px solid var(--stone-3);margin-bottom:2px}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:18px 28px}
+.cols h3{margin:0 0 6px;font-size:21px;color:var(--verdigris)}
+.cols ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:5px;font-size:18px;line-height:1.2}
+code{font-family:var(--ui);color:var(--gold)}
+</style>
+</head>
+<body>
+<div class="page">
+  <header class="mast">
+    <div class="name"><h1>oubliette</h1><span class="sub">the art bank</span></div>
+    <p>Every sprite the game has, drawn in code from one palette. One dungeon is built. The rest is banked, so a second dungeon starts with its tiles, its cast and its boss already drawn.</p>
+    <ul class="stats" id="stats"></ul>
+  </header>
+
+  <section>
+    <h2>Five dungeons</h2>
+    <p>Each plate is a mock room: that dungeon's tiles, a few of its props, its cast and its boss, with a delver for scale. Only the gaol is playable. The other four are art, and every name is a placeholder.</p>
+    <div class="plates" id="plates"></div>
+  </section>
+
+  <div id="drawers" style="display:flex;flex-direction:column;gap:34px"></div>
+
+  <section>
+    <h2>The palette</h2>
+    <p id="palNote"></p>
+    <div class="swatches" id="swatches"></div>
+  </section>
+
+  <section>
+    <h2>How the bank works</h2>
+    <p>It is data and a viewer. Nothing here is wired into a game.</p>
+    <div class="cols">
+      <div>
+        <h3>What a sprite is</h3>
+        <ul>
+          <li>A grid of letters in <code>art/*.js</code>. Each letter is a palette key.</li>
+          <li>Symmetric sprites are drawn as a left half and mirrored.</li>
+          <li>A recolour is a letter swap, so a gear tier or an elite enemy costs one line.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>What is settled, and what is not</h3>
+        <ul>
+          <li>The first release is one dungeon. Cards with a verdigris border are in it today.</li>
+          <li>Every name on this page is a placeholder. So are the classes: class design is still open.</li>
+          <li>No stats, no drop tables, no behaviour. This is what things look like, nothing more.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Adding to it</h3>
+        <ul>
+          <li>Add a sprite with <code>A.add(group, id, {…})</code> and reload this page.</li>
+          <li><code>node art/check.cjs</code> catches a ragged row or a letter with no colour.</li>
+          <li>Painted art, such as key art or a logo, is outside what this method makes.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script src="bank.js"></script>
+<script src="creatures.js"></script>
+<script src="items.js"></script>
+<script src="world.js"></script>
+<script>
+(function(){
+'use strict';
+const A=window.OUB_ART,$=id=>document.getElementById(id);
+const RM=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const ROMAN=['','I','II','III'];
+function el(tag,cls,txt){const e=document.createElement(tag);if(cls)e.className=cls;if(txt!==undefined)e.textContent=txt;return e;}
+function show(c,scale){c.className='px';c.style.width=c.width*scale+'px';c.style.height=c.height*scale+'px';return c;}
+const animated=[];
+
+/* ---------- drawers: one card per sprite, one figure per look ---------- */
+function card(d){
+  const size=A.size(d),scale=d.group==='shots'?6:d.group==='ui'&&size[0]<=8?5:4;
+  const c=el('article','card'+(d.slice?' in':'')),h=el('header');
+  h.append(el('b','',d.name),document.createTextNode(size[0]+' × '+size[1]));
+  if(d.slice)h.append(el('span','tag in','in the slice'));
+  const looks=el('div','looks');
+  for(const look of A.looks(d)){
+    const f=el('figure'),cell=el('div','cell'),cnv=show(A.draw(d,look.map,0),scale);
+    cell.append(cnv);f.append(cell);
+    const cap=look.tier?look.label+' · '+ROMAN[look.tier]:look.label===d.name?(A.looks(d).length>1?'as drawn':''):look.label;
+    if(cap)f.append(el('figcaption',look.tier?'t'+look.tier:'',cap));
+    looks.append(f);
+    const n=A.frameCount(d);
+    if(n>1)animated.push({canvas:cnv,frames:Array.from({length:n},(_,i)=>A.draw(d,look.map,i))});
+  }
+  c.append(h,looks);return c;
+}
+function drawers(){
+  const root=$('drawers');
+  for(const g of A.groups){
+    const s=el('section');s.append(el('h2','',g.title),el('p','',g.blurb));
+    const dr=el('div','drawer');for(const id of g.ids)dr.append(card(A.sprites[id]));
+    s.append(dr);root.append(s);
+  }
+}
+
+/* ---------- plates: a mock room per dungeon ---------- */
+const TW=11,TH=7;
+function lookMap(id,variant){const d=A.sprites[id];if(!variant)return d.map||null;const l=A.looks(d).find(x=>x.label===variant);return l?l.map:d.map||null;}
+function plate(sc){
+  const th=A.themes[sc.theme],r=A.mulberry(sc.theme.length*7919+sc.theme.charCodeAt(0)*31),c=A.canvas(TW*16,TH*16),g=c.getContext('2d');
+  const floors=[0,0,0].map(()=>A.tile.floor(th,r,0)),crk=A.tile.floor(th,r,1),grown=A.tile.floor(th,r,2),faces=[A.tile.face(th,r),A.tile.face(th,r)],top=A.tile.top(th,r);
+  for(let y=0;y<TH;y++)for(let x=0;x<TW;x++){const px=x*16,py=y*16,wallSide=x===0||x===TW-1;
+    if(y===0||y===TH-1||wallSide){g.drawImage(top,px,py);g.fillStyle=th.edge;
+      if(y===TH-1&&!wallSide)g.fillRect(px,py,16,2);
+      if(x===0&&y>1&&y<TH-1)g.fillRect(px+14,py,2,16);
+      if(x===TW-1&&y>1&&y<TH-1)g.fillRect(px,py,2,16);}
+    else if(y===1)g.drawImage(faces[x&1],px,py);
+    else{const q=r();g.drawImage(q<(th.cracked||.07)?crk:q<(th.cracked||.07)+(th.overgrown||.08)?grown:floors[(q*97|0)%3],px,py);
+      if(y===2){g.fillStyle='rgba(8,6,14,.45)';g.fillRect(px,py,16,3);g.fillStyle='rgba(8,6,14,.25)';g.fillRect(px,py+3,16,2);}}}
+  if(th.liquid){const lq=A.tile.liquid(th,r,0);for(let y=4;y<6;y++)for(let x=8;x<10;x++)g.drawImage(lq,x*16,y*16);
+    g.fillStyle='rgba(8,6,14,.5)';g.fillRect(128,64,32,2);g.fillRect(128,64,2,32);}
+  const torch=A.draw(A.sprites.torch,null,0);g.drawImage(torch,2*16+5,19);g.drawImage(torch,8*16+5,19);
+  /* things, back to front. [canvas, x of centre, y of base, shadow half-width] */
+  const things=[];
+  const wall={banner:[59,33],portcullis:[88,32],door:[88,32],cage:[112,31],cobweb:[22,42]};
+  const floorSlots=[[28,52],[150,52],[28,94]];let fs=0;
+  for(const p of sc.props){const d=A.sprites[p[0]],cnv=A.draw(d,lookMap(p[0],p[1]),0);
+    if(wall[p[0]])g.drawImage(cnv,wall[p[0]][0]-(cnv.width>>1),wall[p[0]][1]-cnv.height);
+    else{const s=floorSlots[fs++%floorSlots.length];things.push([cnv,s[0],s[1],cnv.width>>1]);}}
+  const slots=[[50,64],[124,64],[56,94],[112,96],[72,48]];
+  sc.cast.forEach((cm,i)=>{const s=slots[i%slots.length];things.push([A.draw(A.sprites[cm[0]],lookMap(cm[0],cm[1]),0),s[0],s[1],5]);});
+  if(sc.boss)things.push([A.draw(A.sprites[sc.boss],null,0),88,80,13]);
+  things.push([A.draw(A.sprites.lamplighter,A.sprites.lamplighter.map,0),90,102,5]);
+  things.sort((a,b)=>a[2]-b[2]);
+  for(const t of things){g.fillStyle='rgba(5,4,10,.45)';g.fillRect(t[1]-t[3],t[2]-2,t[3]*2,3);g.drawImage(t[0],t[1]-(t[0].width>>1),t[2]-t[0].height);}
+  const fig=el('article','plate'),h=el('h3');
+  h.append(document.createTextNode(th.name),el('span','tag '+(sc.built?'in':'banked'),sc.built?'built':'banked'));
+  const names=sc.cast.map(cm=>cm[1]||A.sprites[cm[0]].name).join(', ');
+  const cast=el('p','cast',(sc.boss?A.sprites[sc.boss].name+'. ':'')+names+'.');
+  c.className='px';fig.append(c,h,el('p','',sc.blurb),cast);return fig;
+}
+
+/* ---------- stats, palette ---------- */
+function stats(){
+  let looks=0,inSlice=0;const n=Object.keys(A.sprites).length;
+  for(const id in A.sprites){looks+=A.looks(A.sprites[id]).length;if(A.sprites[id].slice)inSlice++;}
+  const gear=A.groups.find(g=>g.id==='gear').ids.length*3+A.groups.find(g=>g.id==='relics').ids.length;
+  const items=[[n,'sprites'],[looks,'looks with recolours'],[A.groups.find(g=>g.id==='enemies').ids.length,'enemies'],[A.groups.find(g=>g.id==='bosses').ids.length,'bosses'],[gear,'gear pieces'],[A.scenes.length,'dungeon tilesets'],[inSlice,'sprites in the slice today']];
+  for(const it of items){const li=el('li');li.append(el('b','',it[0]),document.createTextNode(it[1]));$('stats').append(li);}
+  const keys=Object.keys(A.palette);
+  $('palNote').textContent=keys.length+' colours, and every sprite on this page uses only these. The dungeon tiles add darker in-between shades of the same hues.';
+  for(const k of keys){const d=el('div'),i=el('i');i.style.background=A.palette[k];d.append(i,document.createTextNode(A.colourNames[k]));$('swatches').append(d);}
+}
+
+function start(){
+  stats();
+  for(const sc of A.scenes)$('plates').append(plate(sc));
+  drawers();
+  if(!RM&&animated.length){let t=0;setInterval(function(){t++;for(const a of animated){const g=a.canvas.getContext('2d');g.clearRect(0,0,a.canvas.width,a.canvas.height);g.drawImage(a.frames[t%a.frames.length],0,0);}},220);}
+}
+if(window.claude&&window.claude.hot&&window.claude.hot.ready)window.claude.hot.ready(start);else start();
+})();
+</script>
+</body>
+</html>

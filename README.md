@@ -32,3 +32,4 @@ python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
 | `sim/` | the economy simulation (`sim/out/` is gitignored) |
 | `CLAUDE.md` | orientation, working agreements and measured facts for anyone (or anything) working here |
 | `proto/visual/` | the visual slice — placeholder pixel art drawn in code, playable; open `index.html` |
+| `art/` | the art bank — every sprite as data, with a gallery page; banked for dungeons after the first; open `index.html` |
