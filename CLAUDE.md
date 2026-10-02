@@ -141,6 +141,13 @@ cd probe/chain/gas && npm ci && node gas.mjs               # per-action gas, loc
 - **Nothing hand-tuned to the token price.** The economy is denominated in it; the fun is not.
 - One counsel pass before any payout contract is written: permadeath + tradeable value +
   dice-roll drops has the lottery shape (SPEC §6).
+- **The death rate is a treadmill, not a dial** (`docs/red-team.md` A1–A2): organisation and
+  mastery push deaths under the band with no cheat. Any rule that keys off deaths per run
+  (the 7–14 % band, a fresh-drop budget) must count value destroyed, not heads, and fresh drops
+  must be budgeted against gear actually destroyed — by contract, not by the server.
+- **Burns and sales on chain cannot be undone.** Settlement may touch only items a player
+  entered into that run; loot is claimed, never pushed; a server secret is committed before
+  every run; a halt rule and a hard run length are written before the server is.
 
 ## Related
 
