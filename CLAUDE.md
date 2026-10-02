@@ -50,8 +50,12 @@ not play-to-earn: permadeath is the sink the genre never had.
   427-run `--sweep` is in SPEC §5. Nothing inflates once budgets bind; `s = ⅓` is viable at `d0`
   0.10 and robust at 0.20. The fee test is negative (0/90 cells): mint cost sets participation,
   repair is a near-free sink, the fee is paid by merchants. A 2× token-price move re-equilibrates
-  but participation tracks the price. Nothing else built. Next: SPEC §8 step 3, or a v2 sim for
-  the gaps §8 step 2 lists (token cash-out, learned merchant spreads, a wealth effect on demand).
+  but participation tracks the price. `sim/population.py` (2026-10-02) scans N 25–1,200 on v1:
+  per-head flows are flat from ~50 delvers up, so results scale linearly; merchants do not
+  scale. `docs/capital.md` sizes the money: the on-chain system needs no seed capital, the
+  operator earns nothing as specified, and three budgets with break-even head-counts are given.
+  Nothing else built. Next: SPEC §8 step 3, or a v2 sim for the gaps §8 step 2 lists (token
+  cash-out, learned merchant spreads, a wealth effect on demand) plus the operator ETH fee.
 
 ## Commands
 
@@ -66,6 +70,7 @@ python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
 node probe/chain/census.mjs > probe/chain/out/census.txt   # live RH Chain census, read-only, ~2 min
 node probe/chain/randomness.mjs > probe/chain/out/randomness.txt   # block-hash predictability, history window, drand
 cd probe/chain/gas && npm ci && node gas.mjs               # per-action gas, local EVM + live replay, ~2 min
+.venv/bin/python sim/population.py                     # minimum viable population on v1: 150 runs, ~5 min on 4 workers; tail -f sim/out/population.log; --repro 6 s
 ```
 
 ## Working agreements
