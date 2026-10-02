@@ -22,7 +22,9 @@ not play-to-earn: permadeath is the sink the genre never had.
 - `proto/visual/` is the visual slice (2026-10-02): one self-contained `index.html`, no build, no
   dependencies, no image files — every sprite is a letter grid in the source, coloured from one
   33-entry palette and drawn at runtime. Placeholder art and invented names (class, boss, items);
-  it decides nothing (SPEC §4, §5) and is not `game/`. Open the file in a browser;
+  it decides nothing (SPEC §4, §5) and is not `game/`. It carries the two mechanics under test
+  from SPEC §4: one skill at a time (Slip / Mend / Sunder, Space) and a three-second recall (R)
+  that saves the wager but not the loot. Open the file in a browser;
   `node proto/visual/shots.cjs` screenshots each game state into `proto/visual/out/` (gitignored).
 - `sim/` is the economy: agent-based, seeded, fast. `sim/out/` is gitignored.
 - Status: SPEC written 2026-09-25; `sim/economy.py` v0 exists and its 10,000-day, 5-seed sweep

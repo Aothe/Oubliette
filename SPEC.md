@@ -209,6 +209,22 @@ the exchange for wash trading and RMT patterns from day one.
   generative-plus-hand-finish; still needs a source and a budget. Placeholder art for v0 can be
   drawn in code (§5, `proto/visual/`); art direction and anything illustrated still need both.
 - **What persists across death** beyond the vault — fame, unlocks, cosmetics, a pet?
+- **Skills** — operator, 2026-10-02: the dash "could be a skill, with other skills also
+  available like an AOE heal or a special strike". Under test in the slice (`proto/visual/`):
+  one skill at a time on a cooldown — Slip (a dash through bolts), Mend (heals every delver
+  nearby), Sunder (a heavy strike). Proposal, not decided: a skill is a wagered item (the relic
+  slot), so it is minted, traded and lost like the rest and fits v0's ten items without a second
+  class. Open: item or class; and Mend lowers the death rate the economy needs (§5), so it has to
+  be measured before it is kept.
+- **Recall — a way out before the boss** — operator, 2026-10-02: "interesting", with the worry
+  that people "do 1 room, recall, do 1 room, recall, repeat ad nauseum to print money". The worry
+  is right wherever leaving early banks loot: a reward with no risk attached is the inflation of
+  §5's first result, whoever farms it, person or bot. Rule under test in the slice: recall takes
+  three seconds, any hit breaks it, and it saves what you wagered and nothing you picked up —
+  **only the seal behind the boss pays**. A short loop then earns nothing and costs wear. Not
+  taken: recall with loot (the farm); gear from the boss alone (kills the bags the slice's rooms
+  drop). Open: recall lowers deaths — the 7–14 % the economy needs (§5) must be re-measured with
+  people; whether three seconds is right; whether it is allowed in the boss room.
 
 ## 5. Verified vs assumed
 

@@ -74,6 +74,17 @@ button{font:inherit;color:var(--void);background:var(--bone);border:0;padding:8p
 button:hover{background:#fff}
 button:focus-visible{outline:2px solid var(--verdigris);outline-offset:3px}
 
+.skills{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;margin-bottom:8px}
+.skills button,.hold{background:var(--void);color:var(--mute);border:2px solid var(--stone-3);box-shadow:none;padding:5px 4px;font-size:15px;line-height:1.05;text-align:center}
+.skills button b{display:block;font-size:18px;color:var(--bone)}
+.skills button.on{border-color:var(--verdigris);color:var(--bone)}
+.skills button.on b{color:var(--verdigris)}
+.skills button:hover,.hold:hover{background:var(--stone-2)}
+.meter.cool{height:6px;border-width:1px}
+.meter.cool i{background-color:var(--verdigris);background-image:none}
+.hold{display:block;width:100%;margin-top:8px;font-size:16px;touch-action:none;user-select:none;-webkit-user-select:none}
+.hold.on{border-color:var(--verdigris);color:var(--verdigris)}
+
 .plate h2,.notes h2{margin:0 0 4px;font-family:var(--display);font-weight:400;font-size:38px;line-height:1}
 .plate>p,.notes>p{margin:0 0 16px;color:var(--mute);max-width:65ch}
 .rows{display:flex;flex-direction:column;gap:18px}
@@ -120,6 +131,8 @@ button:focus-visible{outline:2px solid var(--verdigris);outline-offset:3px}
         <li><b>WASD / arrows</b> move</li>
         <li><b>Mouse</b> aim, hold to fire</li>
         <li><b>F</b> auto-fire</li>
+        <li><b>Space</b> skill, <b>1 2 3</b> to choose</li>
+        <li><b>R</b> hold three seconds to recall; a hit breaks it</li>
         <li><b>Touch</b> drag to move, bolts aim themselves</li>
       </ul>
     </div>
@@ -128,6 +141,12 @@ button:focus-visible{outline:2px solid var(--verdigris);outline-offset:3px}
       <section>
         <h2>Vitality <span id="hpNum">100 / 100</span></h2>
         <div class="meter"><i id="hpFill" style="width:100%"></i></div>
+      </section>
+      <section>
+        <h2>Skill <span id="skillNum">Space</span></h2>
+        <div class="skills" id="skills"></div>
+        <div class="meter cool"><i id="skillFill" style="width:100%"></i></div>
+        <button type="button" class="hold" id="recallBtn">Hold R to recall</button>
       </section>
       <section>
         <h2>At wager <span>lost if you die</span></h2>
@@ -177,6 +196,8 @@ button:focus-visible{outline:2px solid var(--verdigris);outline-offset:3px}
           <li>The Turnkey, his three phases, every enemy number, every item name and stat.</li>
           <li>Loot you are carrying is left behind when you die. The spec has no rule for it yet.</li>
           <li>Boss drops fall as bags to pick up. The spec's weighted lottery is not modelled.</li>
+          <li>One skill at a time: Slip, Mend or Sunder. In the game a skill would be a wagered item.</li>
+          <li>Recall: three seconds, broken by any hit. It saves what you wagered and leaves what you carried, so only the seal pays.</li>
         </ul>
       </div>
       <div>
@@ -547,6 +568,10 @@ const EDEF={
   gaoler:{hp:150,spd:17,keep:44,hr:7,fire:2.7}
 };
 const NAMES=['Vell','Odric','Tamsin'];
+/* one skill at a time, on Space; cd in ticks. Recall is the way out that pays nothing. */
+const SKILLS=[{name:'Slip',cd:150,note:'dash through bolts'},{name:'Mend',cd:540,note:'heal all nearby'},{name:'Sunder',cd:360,note:'a heavy strike'}];
+const RECALL=180;
+let skillSel=0,skillHit=false;
 function mk(id,rng){return {d:ITEMS[id],dur:70+((rng()*30)|0)};}
 function stats(){const w=wager[0]?wager[0].d.tier:0,a=wager[1]?wager[1].d.tier:0,r=wager[2]?wager[2].d.tier:0;
   return {dmg:[8,12,17,24][w],maxhp:[80,100,130,170][a],rate:[.26,.22,.19,.16][r],light:wager[3]?114:88,bolt:'bolt'+(w||1)};}
@@ -559,7 +584,8 @@ function newRun(seed,fresh){
   const r0=rooms[0],sx=(r0.cx+.5)*16,sy=(r0.cy+.5)*16;
   G={seed:seed,rng:rng,tick:0,state:'play',bullets:[],bags:[],parts:[],texts:[],graves:[],enemies:[],allies:[],log:[],pool:0,
      shake:0,flash:0,portal:null,portalAt:0,cam:{x:sx,y:sy},camx:0,camy:0,st:stats(),rolls:null,deadAt:0,full:0};
-  G.player={x:sx,y:sy,hw:4,hh:3,hp:G.st.maxhp,face:1,cd:0,flash:0,moving:false,skin:0,dead:false,name:'You'};
+  G.player={x:sx,y:sy,hw:4,hh:3,hp:G.st.maxhp,face:1,cd:0,flash:0,moving:false,skin:0,dead:false,name:'You',scd:0,scdMax:1,dash:0,ddx:0,ddy:0,recall:0,rlock:0};
+  skillHit=false;
   const off=[[-16,-10],[14,-12],[-4,16]];
   for(let i=0;i<3;i++)G.allies.push({x:sx+off[i][0],y:sy+off[i][1],ox:off[i][0]*1.4,oy:off[i][1]*1.4,hw:4,hh:3,hp:80,max:80,face:1,cd:20+i*7,flash:0,
     moving:false,skin:i+1,dead:false,name:NAMES[i],dir:i%2?1:-1,dmg:8,skill:.55+i*.2});
@@ -593,13 +619,18 @@ function updatePlayer(P){
   let ix=((keys.d||keys.arrowright)?1:0)-((keys.a||keys.arrowleft)?1:0),iy=((keys.s||keys.arrowdown)?1:0)-((keys.w||keys.arrowup)?1:0);
   if(touch){ix=touch.dx;iy=touch.dy;}
   const l=Math.hypot(ix,iy);P.moving=l>.15;
-  if(P.moving){const sp=64/60*Math.min(1,touch?l:1);tryMove(P,ix/l*sp,iy/l*sp);}
+  if(P.scd>0)P.scd--;if(P.rlock>0)P.rlock--;
+  const rec=!!keys.r&&P.rlock<=0&&P.dash<=0;
+  if(P.dash>0){P.dash--;tryMove(P,P.ddx*5.5,P.ddy*5.5);if(!RM)puff(P.x,P.y-5,1,[PAL.T,PAL.t],.3,10);}
+  else if(P.moving){const sp=64/60*Math.min(1,touch?l:1)*(rec?.5:1);tryMove(P,ix/l*sp,iy/l*sp);}
   let ax=null,ay=0;
   if(touchMode){const e=nearestFoe(P.x,P.y,150);if(e){ax=e.x;ay=e.y-(e===G.boss?12:6);}}
   else if(mouse.seen){mouse.wx=mouse.bx+G.camx;mouse.wy=mouse.by+G.camy;ax=mouse.wx;ay=mouse.wy;}
   if(ax!==null)P.face=ax<P.x?-1:1;else if(P.moving&&Math.abs(ix)>.2)P.face=ix<0?-1:1;
+  if(skillHit){skillHit=false;if(P.scd<=0&&!rec&&P.dash<=0)useSkill(P,ix,iy,l,ax,ay);}
+  if(rec){if(++P.recall>=RECALL){recallOut();return;}}else P.recall=0;
   P.cd--;
-  const want=touchMode?ax!==null:(mouseDown||autoFire)&&ax!==null;
+  const want=!rec&&P.dash<=0&&(touchMode?ax!==null:(mouseDown||autoFire)&&ax!==null);
   if(want&&P.cd<=0){P.cd=st.rate*60;shoot(P.x,P.y-5,Math.atan2(ay-(P.y-5),ax-P.x),178,st.bolt,st.dmg,0,46);}
   P.hp=Math.min(st.maxhp,P.hp+2/60);if(P.flash>0)P.flash--;
   const B=G.boss,br=rooms[5];
@@ -609,6 +640,19 @@ function updatePlayer(P){
     else if(carried.length<8){carried.push(b.item);addText(P.x,P.y-22,'+'+b.item.d.name,b.item.d.tier===3?PAL.T:b.item.d.tier===2?PAL.o:PAL.b,80);G.bags.splice(i,1);hudDirty=true;}
     else if(G.tick-G.full>90){G.full=G.tick;addText(P.x,P.y-22,'Pack full',PAL['6'],50);}}
   if(G.portal){const dx=G.portal.x-P.x,dy=G.portal.y-P.y;if(dx*dx+dy*dy<120)extract();}
+}
+function useSkill(P,ix,iy,l,ax,ay){
+  const k=SKILLS[skillSel];P.scd=P.scdMax=k.cd;
+  if(skillSel===0){let dx=ix,dy=iy,d=l;
+    if(d<.15){if(ax!==null){dx=ax-P.x;dy=ay-(P.y-5);}else{dx=P.face;dy=0;}d=Math.hypot(dx,dy)||1;}
+    P.ddx=dx/d;P.ddy=dy/d;P.dash=8;puff(P.x,P.y-5,8,[PAL.T,'#ffffff'],.8,14);}
+  else if(skillSel===1){let n=0;
+    for(const t of delvers()){if(Math.hypot(t.x-P.x,t.y-P.y)>64)continue;const mx=t===P?G.st.maxhp:t.max;
+      t.hp=Math.min(mx,t.hp+35);addText(t.x-6,t.y-22,'+35',PAL.H,40);puff(t.x,t.y-6,6,[PAL.H,'#ffffff'],.6,20);n++;}
+    G.mend={x:P.x,y:P.y,t:G.tick};log('You mend '+n+(n===1?' delver.':' delvers.'));}
+  else{const a=ax!==null?Math.atan2(ay-(P.y-5),ax-P.x):P.face<0?3.1416:0;
+    for(let i=-2;i<=2;i++)shoot(P.x,P.y-5,a+i*.11,200,'bolt3',G.st.dmg*3,0,52);
+    G.shake=Math.max(G.shake,2);puff(P.x,P.y-5,10,[PAL.T,'#ffffff'],1.2,14);}
 }
 function updateAlly(a){
   const P=G.player,B=G.boss;let tgt=null,bd=150*150;
@@ -666,7 +710,7 @@ function updateBoss(b){
   }
 }
 function hurtDelver(t,dmg){t.hp-=dmg;t.flash=6;addText(t.x-6,t.y-22,'-'+dmg,PAL.e,34);
-  if(t===G.player)G.shake=Math.max(G.shake,3);
+  if(t===G.player){G.shake=Math.max(G.shake,3);if(t.recall>0)addText(t.x,t.y-32,'Recall broken',PAL.e,50);t.recall=0;t.rlock=30;}
   if(t.hp<=0)killDelver(t);else if(t!==G.player)hudDirty=true;}
 function killDelver(t){
   t.dead=true;t.hp=0;G.graves.push({x:t.x,y:t.y,name:t.name});puff(t.x,t.y-6,26,[PAL.o,PAL.y,PAL.r,PAL['5']],1.4,34);G.shake=Math.max(G.shake,6);
@@ -706,7 +750,7 @@ function updateBullets(){
         if(!gone&&!B.dead&&B.awake){const dx=B.x-b.x,dy=B.y-12-b.y,rr=b.r+B.hr;
           if(dx*dx+dy*dy<rr*rr){B.hp-=b.dmg;if(G.tick-(B.fAt||0)>14){B.flash=2;B.fAt=G.tick;}gone=true;if(b.k!=='ally')addText(B.x-8+Math.random()*16,B.y-34,b.dmg,PAL.B,26);if(B.hp<=0)killBoss(B);}}
       }else{
-        for(const t of delvers()){const dx=t.x-b.x,dy=t.y-5-b.y,rr=b.r+3.5;
+        for(const t of delvers()){if(t.dash>0)continue;const dx=t.x-b.x,dy=t.y-5-b.y,rr=b.r+3.5;
           if(dx*dx+dy*dy<rr*rr){hurtDelver(t,b.dmg);gone=true;break;}}
       }}
     if(gone){if(b.life>0)puff(b.x,b.y,3,[S.bcol[b.k]],.5,8);bs.splice(i,1);}}
@@ -755,6 +799,19 @@ function extract(){
   log('You extract with '+carried.length+' pieces.');ov.hidden=false;hudDirty=true;
 }
 
+function recallOut(){
+  G.state='out';const ov=$('overlay');ov.className='overlay out';$('ovTitle').textContent='Recalled';
+  $('ovSub').textContent='You got out alive. What you carried stays in the dark.';
+  const ul=$('ovList');ul.textContent='';let i=0;const n=carried.length;
+  for(const it of carried)ul.append(fateRow(S.icon[it.d.id],it.d.name,'Left behind','pool',i++));
+  for(const it of wager){if(!it)continue;const w=6+((G.rng()*7)|0);it.dur=Math.max(0,it.dur-w);ul.append(fateRow(S.icon[it.d.id],it.d.name,'-'+w+' wear','wear',i++));}
+  $('ovNote').textContent=(n?n+' left for whoever breaks the Turnkey. ':'')+'Only the seal lets you walk out with loot. Recall saves what you wagered and nothing else.';
+  carried=[];G.player.recall=0;puff(G.player.x,G.player.y-6,30,[PAL.T,'#ffffff'],1.6,30);
+  const b=$('ovBtn');b.textContent='Delve again with the same wager';
+  b.onclick=function(){newRun(G.seed*1664525+1013904223,false);canvas.focus();};
+  log('You recall. '+n+' left behind.');ov.hidden=false;hudDirty=true;
+}
+
 /* ---------- render ---------- */
 function circ(g,x,y,r){g.beginPath();g.arc(x,y,r,0,6.2832);g.fill();}
 function ell(g,x,y,rx,ry,col){g.fillStyle=col;ry=Math.round(ry);for(let j=-ry;j<=ry;j++){const w=Math.round(rx*Math.sqrt(1-(j*j)/((ry+.5)*(ry+.5))));g.fillRect(x-w,y+j,w*2+1,1);}}
@@ -798,7 +855,7 @@ function render(){
       lights.push([x,y-13+bob,o.awake?46:20,'#e8822e',1]);}
     else if(d[1]===4){const isP=o===P,fr=S.delver[o.skin][o.moving?((t>>3)&1):0],left=o.face<0;
       shadow(g,x,y+3,5);
-      g.drawImage(o.flash>0?(left?fr.wf:fr.w):(left?fr.f:fr.c),x-(left?9:7),y-12);
+      g.drawImage(o.flash>0||o.dash>0?(left?fr.wf:fr.w):(left?fr.f:fr.c),x-(left?9:7),y-12);
       lights.push([x+(left?-6:7),y-3,(isP?G.st.light:58)+fl*Math.sin((t+o.skin*40)*.17)*2,'#f7c04a',1]);}
     else{const pu=RM?.5:.5+.5*Math.sin(t*.09);
       ell(g,x,y,16,9,PAL.d);ell(g,x,y,12,7,PAL.t);ell(g,x,y,7+pu*2,4+pu,PAL.T);ell(g,x,y,3+pu,2,'#ffffff');
@@ -809,6 +866,9 @@ function render(){
   }
   for(const b of G.bullets){const x=Math.round(b.x)-camx,y=Math.round(b.y)-camy;if(x<-8||y<-8||x>vw+8||y>vh+8)continue;
     const s=S.b[b.k];g.drawImage(s,x-(s.width>>1),y-(s.height>>1));lights.push([x,y,b.r*4+3,S.bcol[b.k],0]);}
+  if(G.mend&&t-G.mend.t<26){const q=(t-G.mend.t)/26,rr=10+q*54,mx=Math.round(G.mend.x)-camx,my=Math.round(G.mend.y)-camy;
+    g.fillStyle=q<.5?'#ffffff':PAL.H;for(let i=0;i<48;i++){const a=i*.1309;g.fillRect(Math.round(mx+Math.cos(a)*rr),Math.round(my+Math.sin(a)*rr*.6),1,1);}
+    lights.push([mx,my,rr,'#5fd1b5',1,1.6]);}
   for(const p of G.parts){g.fillStyle=p.col;g.fillRect(Math.round(p.x)-camx,Math.round(p.y)-camy,p.s,p.s);}
   /* coloured glow, then darkness with the lights punched out in three bands */
   g.globalCompositeOperation='lighter';
@@ -825,6 +885,9 @@ function render(){
   for(const a of G.allies){if(a.dead)continue;const x=Math.round(a.x)-camx,y=Math.round(a.y)-camy;textC(g,a.name,x,y-21,PAL['6']);if(a.hp<a.max-1)bar(g,x-6,y-14,12,a.hp/a.max,PAL.H);}
   if(!P.dead&&G.state==='play'&&P.hp<G.st.maxhp-1){const x=Math.round(P.x)-camx,y=Math.round(P.y)-camy;bar(g,x-7,y+7,14,P.hp/G.st.maxhp,P.hp<G.st.maxhp*.3?PAL.e:PAL.H);}
   for(const gr of G.graves){const x=Math.round(gr.x)-camx,y=Math.round(gr.y)-camy;textC(g,gr.name,x,y-17,PAL['5']);}
+  if(!P.dead&&G.state==='play'&&P.recall>0){const x=Math.round(P.x)-camx,y=Math.round(P.y)-camy,f=P.recall/RECALL;
+    textC(g,'Recalling',x,y-32,PAL.T);bar(g,x-10,y-25,20,f,PAL.T);
+    for(let i=0;i<24*f;i++){const a=-1.5708+i*.2618;g.fillStyle=i%2?PAL.T:'#ffffff';g.fillRect(Math.round(x+Math.cos(a)*14),Math.round(y-4+Math.sin(a)*9),1,1);}}
   if(G.portal&&G.state==='play')textC(g,'Extract',Math.round(G.portal.x)-camx,Math.round(G.portal.y)-camy-40,PAL.T);
   for(const tx of G.texts){g.globalAlpha=Math.min(1,tx.life/12);const s=String(tx.s);text(g,s,Math.round(tx.x)-camx-(s.length>4?textW(s)/2:0),Math.round(tx.y)-camy,tx.col,tx.sc);}
   g.globalAlpha=1;
@@ -851,6 +914,9 @@ function rebuildHud(){
       const dur=el('i','dur'),f=el('i');f.style.width=it.dur+'%';dur.append(f);body.append(dur);}
     else body.append(el('span','nm','Nothing wagered'),el('span','meta',SLOTS[i]));
     li.append(ic,body);wl.append(li);});
+  const sk=$('skills');sk.textContent='';
+  SKILLS.forEach((k,i)=>{const b=el('button',i===skillSel?'on':'');b.type='button';b.append(el('b','',(i+1)+' '+k.name),document.createTextNode(k.note));
+    b.onclick=function(){if(i===skillSel)skillHit=true;else{skillSel=i;hudDirty=true;}canvas.focus();};sk.append(b);});
   const bag=$('bag');bag.textContent='';
   for(let i=0;i<8;i++){const c=el('div');if(carried[i]){c.append(iconEl(S.icon[carried[i].d.id],2));c.title=carried[i].d.name+' (tier '+ROMAN[carried[i].d.tier]+')';}bag.append(c);}
   const lg=$('log');lg.textContent='';for(const s of G.log)lg.append(el('li','',s));
@@ -866,6 +932,8 @@ function tickHud(){
   if(hudDirty)rebuildHud();
   const P=G.player,mx=G.st.maxhp;$('hpFill').style.width=Math.max(0,P.hp/mx*100)+'%';$('hpNum').textContent=Math.max(0,Math.ceil(P.hp))+' / '+mx;
   for(const a of G.allies)if(!a.dead&&a._bar)a._bar.style.width=Math.max(0,a.hp/a.max*100)+'%';
+  $('skillFill').style.width=(P.scd>0?(1-P.scd/P.scdMax)*100:100)+'%';$('skillNum').textContent=P.scd>0?(P.scd/60).toFixed(1)+' s':'Space';
+  $('recallBtn').classList.toggle('on',P.recall>0);
   $('rec').textContent='seed '+hex(G.seed)+' · tick '+G.tick.toLocaleString('en-US')+' · 60 Hz · shard 1 of 1';
 }
 
@@ -889,9 +957,12 @@ function buildSheet(){
 /* ---------- input, sizing, loop ---------- */
 function started(){$('hint').classList.add('off');}
 window.addEventListener('keydown',function(e){const k=e.key.toLowerCase();
-  if(document.activeElement===canvas&&(k===' '||k.indexOf('arrow')===0))e.preventDefault();
+  const ae=document.activeElement;
+  if((ae===canvas&&k.indexOf('arrow')===0)||(k===' '&&(ae===canvas||ae===document.body||!ae)))e.preventDefault();
   if(e.metaKey||e.ctrlKey||e.altKey)return;
-  keys[k]=true;if(k==='f'&&!e.repeat)autoFire=!autoFire;started();});
+  keys[k]=true;
+  if(!e.repeat){if(k==='f')autoFire=!autoFire;else if(k===' ')skillHit=true;else if(k==='1'||k==='2'||k==='3'){skillSel=+k-1;hudDirty=true;}}
+  started();});
 window.addEventListener('keyup',function(e){keys[e.key.toLowerCase()]=false;});
 window.addEventListener('blur',function(){for(const k in keys)keys[k]=false;mouseDown=false;});
 function setMouse(e){const r=canvas.getBoundingClientRect();mouse.bx=(e.clientX-r.left)/r.width*buf.width;mouse.by=(e.clientY-r.top)/r.height*buf.height;mouse.seen=true;}
@@ -906,6 +977,9 @@ canvas.addEventListener('pointermove',function(e){
 function pointerEnd(e){if(e.pointerType==='touch'){if(touch&&e.pointerId===touch.id)touch=null;}else mouseDown=false;}
 canvas.addEventListener('pointerup',pointerEnd);canvas.addEventListener('pointercancel',pointerEnd);
 canvas.addEventListener('contextmenu',function(e){e.preventDefault();});
+const recallBtn=$('recallBtn');
+recallBtn.addEventListener('pointerdown',function(e){keys.r=true;started();try{recallBtn.setPointerCapture(e.pointerId);}catch(_){}});
+['pointerup','pointercancel','lostpointercapture'].forEach(function(n){recallBtn.addEventListener(n,function(){keys.r=false;});});
 function resize(){const r=stage.getBoundingClientRect(),dpr=Math.min(window.devicePixelRatio||1,3);
   const W=Math.max(2,Math.round(stage.clientWidth*dpr)),H=Math.max(2,Math.round(stage.clientHeight*dpr));
   if(!r.width)return;canvas.width=W;canvas.height=H;zoom=Math.max(1,Math.floor(W/330));
@@ -920,7 +994,7 @@ function start(){
   if(window.ResizeObserver)new ResizeObserver(resize).observe(stage);else window.addEventListener('resize',resize);
   window.__oub={get G(){return G;},rooms:function(){return rooms;},
     warp:function(i){const r=rooms[i],x=(r.cx+.5)*16-(i===5?70:0),y=(r.cy+.5)*16;G.player.x=x;G.player.y=y;G.cam.x=x;G.cam.y=y;for(const a of G.allies){a.x=x+a.ox;a.y=y+a.oy;}},
-    hurt:function(n){hurtDelver(G.player,n);},boss:function(hp){G.boss.hp=hp;}};
+    hurt:function(n){hurtDelver(G.player,n);},boss:function(hp){G.boss.hp=hp;},skill:function(i){skillSel=i;skillHit=true;hudDirty=true;},give:function(id){carried.push(mk(id,G.rng));hudDirty=true;}};
   requestAnimationFrame(frame);
 }
 if(window.claude&&window.claude.hot&&window.claude.hot.ready)window.claude.hot.ready(start);else start();

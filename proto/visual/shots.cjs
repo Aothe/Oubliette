@@ -45,7 +45,7 @@ const out = path.join(__dirname, 'out');
   await page.waitForTimeout(1000);
   await shot(page, '01-start.png');
 
-  // window.__oub is the page's debug hook: G (state), warp(room), hurt(n), boss(hp).
+  // window.__oub is the page's debug hook: G (state), warp(room), hurt(n), boss(hp), skill(i), give(id).
   const stage = await page.$('#stage');
   const box = await stage.boundingBox();
   const heal = () => page.evaluate(() => { const G = window.__oub.G; G.player.hp = G.st.maxhp; });
@@ -76,6 +76,29 @@ const out = path.join(__dirname, 'out');
   await page.waitForTimeout(3400);
   await shot(page, '07-death.png');
   await page.screenshot({ path: path.join(out, '08-full-page.png'), fullPage: true });
+
+  // skills and the recall, on a fresh run: give() puts loot in the pack so the panel has rows
+  const rp = await browser.newPage({ viewport: { width: 1280, height: 860 } });
+  rp.on('pageerror', e => errors.push('recall: ' + e.message));
+  await rp.goto(page_url, { waitUntil: 'networkidle' });
+  await rp.waitForTimeout(800);
+  const rstage = await rp.$('#stage');
+  const rbox = await rstage.boundingBox();
+  await rp.mouse.move(rbox.x + rbox.width * 0.8, rbox.y + rbox.height * 0.45);
+  await rp.evaluate(() => window.__oub.skill(2));        // Sunder
+  await rp.waitForTimeout(160);
+  await shot(rstage, '10-skill-sunder.png');
+  await rp.evaluate(() => { window.__oub.G.player.scd = 0; window.__oub.skill(1); });   // Mend
+  await rp.waitForTimeout(200);
+  await shot(rstage, '11-skill-mend.png');
+  await rp.evaluate(() => { window.__oub.give('wand2'); window.__oub.give('ring1'); });
+  await rp.keyboard.down('r');
+  await rp.waitForTimeout(1700);
+  await shot(rstage, '12-recalling.png');
+  await rp.waitForTimeout(2000);
+  await rp.keyboard.up('r');
+  await rp.waitForTimeout(1200);
+  await shot(rp, '13-recalled.png');
 
   const phone = await browser.newPage({ viewport: { width: 390, height: 800 }, deviceScaleFactor: 2 });
   phone.on('pageerror', e => errors.push('phone: ' + e.message));
