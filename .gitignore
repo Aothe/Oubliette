@@ -19,3 +19,8 @@ __pycache__/
 # prototype and gallery captures — never committed
 proto/*/out/
 art/out/
+
+# chain probes — outputs and dependencies never committed
+probe/*/out/
+probe/*/*/out/
+node_modules/

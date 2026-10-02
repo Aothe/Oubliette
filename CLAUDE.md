@@ -35,6 +35,11 @@ not play-to-earn: permadeath is the sink the genre never had.
   `node art/check.cjs` validates the bank and fails if those copies drift;
   `node art/shots.cjs` screenshots the gallery into `art/out/` (gitignored).
 - `sim/` is the economy: agent-based, seeded, fast. `sim/out/` is gitignored.
+- `probe/chain/` holds read-only measurements of RH Chain (2026-10-02/03): `census.mjs` (cadence,
+  fees, finality, control, infrastructure), `randomness.mjs` (block-hash predictability, the
+  EIP-2935 history window, drand on the BLS precompiles) and `gas/` (a measuring-stick contract
+  set, not the contracts, with every action replayed live). Outputs go to `probe/chain/out/` and
+  `probe/chain/gas/out/` (gitignored). `docs/chain.md` is the reading.
 - Status: SPEC written 2026-09-25; `sim/economy.py` v0 exists and its 10,000-day, 5-seed sweep
   (`--sweep`, 228 runs) is in SPEC §5: supply is stable iff `(1 − s)·deaths > fresh drops` — flat
   at `s = 0`, `d0` 0.10–0.20; flat in circulation only at `s = ⅓` (nothing in v0 buys t2/t3);
@@ -58,6 +63,9 @@ python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
 .venv/bin/python sim/economy.py --sweep                # SPEC §8 step 2: 228 runs x 10,000 days, ~7 min on 8 workers; tail -f sim/out/sweep.log
 .venv/bin/python sim/economy2.py --sweep               # v1: budgets, merchants, fees, coupling, lottery; 427 runs x 10,000 days, ~10 min; tail -f sim/out/sweep2.log
 .venv/bin/python sim/economy2.py --single --s 0.33 --d0 0.1 --fee 0.05   # one v1 config, 2,000 days, summary line
+node probe/chain/census.mjs > probe/chain/out/census.txt   # live RH Chain census, read-only, ~2 min
+node probe/chain/randomness.mjs > probe/chain/out/randomness.txt   # block-hash predictability, history window, drand
+cd probe/chain/gas && npm ci && node gas.mjs               # per-action gas, local EVM + live replay, ~2 min
 ```
 
 ## Working agreements
@@ -84,6 +92,15 @@ python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
   `ArbSys(0x64).arbBlockHash(n)`** — real L2 hashes, one per ~0.1 s block, verified equal to
   the RPC's, readable on chain for the last 256 blocks and off chain forever. Seeding a
   deterministic simulation per tick from `blockhash` would silently give one value per ~14 s.
+  **Re-measured 2026-10-02/03 (`probe/chain/`, `docs/chain.md`):** a block's hash is computable in
+  advance by whoever is alone in it (impractical for a player, free for the sequencer), so rolls
+  mix in a server secret committed before the run; the **EIP-2935 history contract**
+  `0x0000F90827F1C53a10cb7A02335B175320002935` serves hashes for ~393,000 blocks (~10.9 h), so
+  the 256-block window is no constraint on end-of-run rolls; **BLS12-381 precompiles are live**
+  and drand quicknet verifies on chain; no VRF vendor is deployed; the sequencer feed is closed
+  to anonymous clients; every transaction pays exactly the base fee (0.02–0.04 gwei); the chain
+  has sequencer-level transaction filtering switched on and a 7/8 upgrade multisig with no
+  delay. `eth_simulateV1` with state overrides replays actions on the live chain to the gas unit.
 - **RH Chain stock tokens transfer freely today.** SNDK
   (`0xb90a19ff0af67f7779aff50a882a9cff42446400`) is a beacon proxy whose implementation has no
   blocklist / whitelist / freeze logic; simulated transfers to never-seen addresses succeed from
