@@ -784,7 +784,8 @@ function render(){
     if(d[1]===0){g.drawImage(S.grave,x-5,y-9);}
     else if(d[1]===1){const bob=o.t<24?-Math.abs(Math.sin(o.t*.26))*5:0;shadow(g,x,y+2,4);
       if(!o.item)g.drawImage(S.flask,x-6,y-9+bob);
-      else{g.drawImage(S.bag[o.item.d.tier],x-5,y-8+bob);
+      else{const near=!P.dead&&o.t>=24&&(o.x-P.x)*(o.x-P.x)+(o.y-P.y)*(o.y-P.y)<2304;
+        if(near)g.drawImage(S.icon[o.item.d.id],x-6,y-10);else g.drawImage(S.bag[o.item.d.tier],x-5,y-8+bob);
         if(o.item.d.tier===3){lights.push([x,y-3,20,'#f2cf5e',1]);if((t+((o.x*7)|0))%24<3){g.fillStyle='#fff';g.fillRect(x-6+((t>>3)%10),y-11,1,1);}}
         else if(o.item.d.tier===2)lights.push([x,y-3,12,'#a678e0',0]);}}
     else if(d[1]===2){const sp=S[o.kind],left=o.face<0,bob=o.kind==='shade'?Math.round(Math.sin((t+o.ph)*.12)*2)-3:(o.awake&&((t+o.ph|0)>>4)&1?-1:0);
@@ -824,14 +825,6 @@ function render(){
   for(const a of G.allies){if(a.dead)continue;const x=Math.round(a.x)-camx,y=Math.round(a.y)-camy;textC(g,a.name,x,y-21,PAL['6']);if(a.hp<a.max-1)bar(g,x-6,y-14,12,a.hp/a.max,PAL.H);}
   if(!P.dead&&G.state==='play'&&P.hp<G.st.maxhp-1){const x=Math.round(P.x)-camx,y=Math.round(P.y)-camy;bar(g,x-7,y+7,14,P.hp/G.st.maxhp,P.hp<G.st.maxhp*.3?PAL.e:PAL.H);}
   for(const gr of G.graves){const x=Math.round(gr.x)-camx,y=Math.round(gr.y)-camy;textC(g,gr.name,x,y-17,PAL['5']);}
-  if(!P.dead&&G.state==='play'){let nb=null,nd=6400;
-    for(const b of G.bags){if(b.t<24)continue;const dx=b.x-P.x,dy=b.y-P.y,d2=dx*dx+dy*dy;if(d2>=6400)continue;
-      if(b.item)g.drawImage(S.icon[b.item.d.id],Math.round(b.x)-camx-6,Math.round(b.y)-camy-23+(RM?0:Math.round(Math.sin((t+b.x)*.1))));
-      if(d2<nd){nd=d2;nb=b;}}
-    if(nb){const x=Math.round(nb.x)-camx,y=Math.round(nb.y)-camy;
-      const tr=nb.item?nb.item.d.tier:0,lb=nb.item?nb.item.d.name+' '+ROMAN[tr]:'Draught +40',ly=y-(nb.item?33:19),lw=textW(lb);
-      g.fillStyle='rgba(13,11,20,.82)';g.fillRect(Math.round(x-lw/2)-3,ly-2,lw+6,10);
-      textC(g,lb,x,ly,tr===3?PAL.T:tr===2?PAL.o:tr===1?PAL.b:PAL.e);}}
   if(G.portal&&G.state==='play')textC(g,'Extract',Math.round(G.portal.x)-camx,Math.round(G.portal.y)-camy-40,PAL.T);
   for(const tx of G.texts){g.globalAlpha=Math.min(1,tx.life/12);const s=String(tx.s);text(g,s,Math.round(tx.x)-camx-(s.length>4?textW(s)/2:0),Math.round(tx.y)-camy,tx.col,tx.sc);}
   g.globalAlpha=1;
