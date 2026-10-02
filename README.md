@@ -31,3 +31,4 @@ python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
 | `SPEC.md` | the source of truth |
 | `sim/` | the economy simulation (`sim/out/` is gitignored) |
 | `CLAUDE.md` | orientation, working agreements and measured facts for anyone (or anything) working here |
+| `proto/visual/` | the visual slice — placeholder pixel art drawn in code, playable; open `index.html` |

@@ -19,6 +19,11 @@ not play-to-earn: permadeath is the sink the genre never had.
 
 - Python 3.11 for the simulations (`requirements.txt`, venv at `.venv`). No game engine, no
   service, no contracts yet. `contracts/` (Foundry) and `game/` come later and are not started.
+- `proto/visual/` is the visual slice (2026-10-02): one self-contained `index.html`, no build, no
+  dependencies, no image files — every sprite is a letter grid in the source, coloured from one
+  33-entry palette and drawn at runtime. Placeholder art and invented names (class, boss, items);
+  it decides nothing (SPEC §4, §5) and is not `game/`. Open the file in a browser;
+  `node proto/visual/shots.cjs` screenshots each game state into `proto/visual/out/` (gitignored).
 - `sim/` is the economy: agent-based, seeded, fast. `sim/out/` is gitignored.
 - Status: SPEC written 2026-09-25; `sim/economy.py` v0 exists and its 10,000-day, 5-seed sweep
   (`--sweep`, 228 runs) is in SPEC §5: supply is stable iff `(1 − s)·deaths > fresh drops` — flat
