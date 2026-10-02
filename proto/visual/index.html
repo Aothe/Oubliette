@@ -315,16 +315,16 @@ const TORCH=[
 ["...y..","..yYy.",".yYYy.","oyYYyo","ooyYyo",".oyoo.","..ww..","..ww.."],
 ["..y...","..Yy..",".yYYy.",".oYYyo","oyYyoo",".ooyo.","..ww..","..ww.."]];
 const BAG=[
-"...kkkk...",
-"..klwwlk..",
-"...kllk...",
-"..kkWWkk..",
-".kWWlWWWk.",
-"kWWlWWWWWk",
-"kWWWWWWWwk",
-"kWWWWWWwwk",
-".kWWWWwwk.",
-"..kkkkkk.."];
+"..kk..kk..",
+".kllkkllk.",
+"..kllllk..",
+"...knnk...",
+"..kWWWWk..",
+".kWWWlWWk.",
+"kWWWWWlWWk",
+"kWWWWWWWWk",
+"kwWWWWWWwk",
+".kkkkkkkk."];
 const GRAVE=[
 "..kkkkkk..",
 ".k566665k.",
@@ -455,7 +455,7 @@ function buildSprites(){
   S.delver=CLOAKS.map(m=>[bundle(spr(DELVER_A,m)),bundle(spr(DELVER_B,m))]);
   S.forgotten=bundle(spr(FORGOTTEN));S.shade=bundle(spr(SHADE));S.gaoler=bundle(spr(GAOLER));S.turnkey=bundle(spr(TURNKEY));
   S.torch=TORCH.map(t=>spr(t));
-  S.bag=[null,spr(BAG),spr(BAG,{W:'P',w:'p',l:'#'}),spr(BAG,{W:'G',w:'g',l:'#'})];
+  S.bag=[null,spr(BAG),spr(BAG,{W:'p',w:'v',l:'P',n:'#'}),spr(BAG,{W:'G',w:'g',l:'Y',n:'#'})];
   S.grave=spr(GRAVE);S.bone=spr(BONE,{B:'n',b:'5'});S.skull=spr(SKULL,{B:'n',b:'5'});S.flask=spr(FLASK);
   S.b={bolt1:spr(DIA5,{a:'t',A:'T'}),bolt2:spr(DIA5,{a:'T',A:'#'}),bolt3:spr(DIA7,{a:'t',A:'T'}),ally:spr(DIA5,{a:'d',A:'t'}),
     bone:spr(ORB5,{a:'n',A:'B'}),purple:spr(ORB5,{a:'p',A:'P'}),red:spr(ORB5,{a:'e',A:'y'}),orange:spr(ORB5,{a:'o',A:'Y'}),big:spr(ORB7,{a:'r',A:'o'})};
@@ -757,6 +757,7 @@ function extract(){
 
 /* ---------- render ---------- */
 function circ(g,x,y,r){g.beginPath();g.arc(x,y,r,0,6.2832);g.fill();}
+function ell(g,x,y,rx,ry,col){g.fillStyle=col;ry=Math.round(ry);for(let j=-ry;j<=ry;j++){const w=Math.round(rx*Math.sqrt(1-(j*j)/((ry+.5)*(ry+.5))));g.fillRect(x-w,y+j,w*2+1,1);}}
 function shadow(g,x,y,w){g.fillStyle='rgba(5,4,10,.45)';g.fillRect(x-w,y,w*2,2);g.fillRect(x-w+1,y-1,w*2-2,4);}
 function bar(g,x,y,w,f,col){g.fillStyle=PAL.k;g.fillRect(x-1,y-1,w+2,3);g.fillStyle=PAL['3'];g.fillRect(x,y,w,1);g.fillStyle=col;g.fillRect(x,y,Math.max(0,Math.round(w*f)),1);}
 function render(){
@@ -798,16 +799,19 @@ function render(){
       shadow(g,x,y+3,5);
       g.drawImage(o.flash>0?(left?fr.wf:fr.w):(left?fr.f:fr.c),x-(left?9:7),y-12);
       lights.push([x+(left?-6:7),y-3,(isP?G.st.light:58)+fl*Math.sin((t+o.skin*40)*.17)*2,'#f7c04a',1]);}
-    else{for(let i=0;i<34;i++){const a=t*.045+i*.74,rr=3+(i%8)*1.5;
-        g.fillStyle=i%3===0?'#ffffff':i%3===1?PAL.T:PAL.t;g.fillRect(Math.round(x+Math.cos(a)*rr*1.25),Math.round(y+Math.sin(a)*rr*.7),1,1);}
-      lights.push([x,y,54,'#5fd1b5',1]);}
+    else{const pu=RM?.5:.5+.5*Math.sin(t*.09);
+      ell(g,x,y,16,9,PAL.d);ell(g,x,y,12,7,PAL.t);ell(g,x,y,7+pu*2,4+pu,PAL.T);ell(g,x,y,3+pu,2,'#ffffff');
+      for(let i=0;i<40;i++){const a=t*.05+i*.63,rr=5+(i%9)*1.7;
+        g.fillStyle=i%3===0?'#ffffff':i%3===1?PAL.T:PAL.t;g.fillRect(Math.round(x+Math.cos(a)*rr*1.2),Math.round(y+Math.sin(a)*rr*.68),1,1);}
+      for(let i=0;i<10;i++){const h=(t*.5+i*23)%30;g.fillStyle=i%2?PAL.T:'#ffffff';g.fillRect(x-9+(i*7)%19,Math.round(y-2-h),1,h<22?2:1);}
+      lights.push([x,y-2,80+pu*6,'#5fd1b5',1,2.6]);}
   }
   for(const b of G.bullets){const x=Math.round(b.x)-camx,y=Math.round(b.y)-camy;if(x<-8||y<-8||x>vw+8||y>vh+8)continue;
     const s=S.b[b.k];g.drawImage(s,x-(s.width>>1),y-(s.height>>1));lights.push([x,y,b.r*4+3,S.bcol[b.k],0]);}
   for(const p of G.parts){g.fillStyle=p.col;g.fillRect(Math.round(p.x)-camx,Math.round(p.y)-camy,p.s,p.s);}
   /* coloured glow, then darkness with the lights punched out in three bands */
   g.globalCompositeOperation='lighter';
-  for(const L of lights){if(!L[4])continue;g.fillStyle=L[3];g.globalAlpha=.07;circ(g,L[0],L[1],L[2]*.75);g.globalAlpha=.06;circ(g,L[0],L[1],L[2]*.4);}
+  for(const L of lights){if(!L[4])continue;const m=L[5]||1;g.fillStyle=L[3];g.globalAlpha=.032*m;circ(g,L[0],L[1],L[2]*.75);g.globalAlpha=.028*m;circ(g,L[0],L[1],L[2]*.4);}
   g.globalAlpha=1;g.globalCompositeOperation='source-over';
   const d=dctx;d.globalCompositeOperation='source-over';d.clearRect(0,0,vw,vh);d.fillStyle=G.state==='dead'?'rgba(22,4,10,.9)':'rgba(6,4,12,.88)';d.fillRect(0,0,vw,vh);
   d.globalCompositeOperation='destination-out';
@@ -820,6 +824,15 @@ function render(){
   for(const a of G.allies){if(a.dead)continue;const x=Math.round(a.x)-camx,y=Math.round(a.y)-camy;textC(g,a.name,x,y-21,PAL['6']);if(a.hp<a.max-1)bar(g,x-6,y-14,12,a.hp/a.max,PAL.H);}
   if(!P.dead&&G.state==='play'&&P.hp<G.st.maxhp-1){const x=Math.round(P.x)-camx,y=Math.round(P.y)-camy;bar(g,x-7,y+7,14,P.hp/G.st.maxhp,P.hp<G.st.maxhp*.3?PAL.e:PAL.H);}
   for(const gr of G.graves){const x=Math.round(gr.x)-camx,y=Math.round(gr.y)-camy;textC(g,gr.name,x,y-17,PAL['5']);}
+  if(!P.dead&&G.state==='play'){let nb=null,nd=6400;
+    for(const b of G.bags){if(b.t<24)continue;const dx=b.x-P.x,dy=b.y-P.y,d2=dx*dx+dy*dy;if(d2>=6400)continue;
+      if(b.item)g.drawImage(S.icon[b.item.d.id],Math.round(b.x)-camx-6,Math.round(b.y)-camy-23+(RM?0:Math.round(Math.sin((t+b.x)*.1))));
+      if(d2<nd){nd=d2;nb=b;}}
+    if(nb){const x=Math.round(nb.x)-camx,y=Math.round(nb.y)-camy;
+      const tr=nb.item?nb.item.d.tier:0,lb=nb.item?nb.item.d.name+' '+ROMAN[tr]:'Draught +40',ly=y-(nb.item?33:19),lw=textW(lb);
+      g.fillStyle='rgba(13,11,20,.82)';g.fillRect(Math.round(x-lw/2)-3,ly-2,lw+6,10);
+      textC(g,lb,x,ly,tr===3?PAL.T:tr===2?PAL.o:tr===1?PAL.b:PAL.e);}}
+  if(G.portal&&G.state==='play')textC(g,'Extract',Math.round(G.portal.x)-camx,Math.round(G.portal.y)-camy-40,PAL.T);
   for(const tx of G.texts){g.globalAlpha=Math.min(1,tx.life/12);const s=String(tx.s);text(g,s,Math.round(tx.x)-camx-(s.length>4?textW(s)/2:0),Math.round(tx.y)-camy,tx.col,tx.sc);}
   g.globalAlpha=1;
   const B=G.boss;
@@ -885,7 +898,7 @@ function started(){$('hint').classList.add('off');}
 window.addEventListener('keydown',function(e){const k=e.key.toLowerCase();
   if(document.activeElement===canvas&&(k===' '||k.indexOf('arrow')===0))e.preventDefault();
   if(e.metaKey||e.ctrlKey||e.altKey)return;
-  keys[k]=true;if(k==='f'&&!e.repeat)autoFire=!autoFire;if('wasd'.indexOf(k)>=0||k.indexOf('arrow')===0)started();});
+  keys[k]=true;if(k==='f'&&!e.repeat)autoFire=!autoFire;started();});
 window.addEventListener('keyup',function(e){keys[e.key.toLowerCase()]=false;});
 window.addEventListener('blur',function(){for(const k in keys)keys[k]=false;mouseDown=false;});
 function setMouse(e){const r=canvas.getBoundingClientRect();mouse.bx=(e.clientX-r.left)/r.width*buf.width;mouse.by=(e.clientY-r.top)/r.height*buf.height;mouse.seen=true;}
