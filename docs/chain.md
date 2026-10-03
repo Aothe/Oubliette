@@ -35,8 +35,8 @@ is the first answer and decides nothing on its own.*
    challenge period. The 194 stock tokens sit behind one upgradeable beacon and are pausable.
    The site's trust statement has to name Robinhood as the party that orders blocks and can
    filter transactions.
-5. **Chain choice:** see §6 — the web research on terms and alternatives is in
-   `scratchpad`-derived notes and summarised there.
+5. **Chain choice: stay on RH Chain**, with Arbitrum One and Base as named exits (§6; the web
+   research behind it, with every URL, is `docs/chain-web-notes.md`).
 
 ## 1. The chain as measured (`probe/chain/census.mjs`, 2026-10-02/03)
 
