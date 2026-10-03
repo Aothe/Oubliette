@@ -21,12 +21,19 @@ not play-to-earn: permadeath is the sink the genre never had.
   service, no contracts yet. `contracts/` (Foundry) and `game/` come later and are not started.
 - `proto/visual/` is the visual slice (2026-10-02): one self-contained `index.html`, no build, no
   dependencies, no image files — every sprite is a letter grid in the source, coloured from one
-  33-entry palette and drawn at runtime. Placeholder art and invented names (class, boss, items);
+  35-entry palette and drawn at runtime. Placeholder art and invented names (class, boss, items);
   it decides nothing (SPEC §4, §5) and is not `game/`. It carries the operator's two additions
   (SPEC §2): one skill per delver, a wagered item chosen in the entry hall and then locked
   (Slip / Mend / Sunder, Space), and a three-second recall (R) that saves the wager but not the
   loot and is shut once the boss wakes. Open the file in a browser;
   `node proto/visual/shots.cjs` screenshots each game state into `proto/visual/out/` (gitignored).
+- `art/` is the art bank (2026-10-02): every sprite as data — `bank.js` (the palette, the loader,
+  the tile generator), `creatures.js`, `items.js`, `world.js` — and `index.html`, a gallery that
+  draws all of it. 99 sprites, 191 looks with recolours, five dungeon tilesets. Banked for
+  dungeons after the first (SPEC §7, not-v0): wired into nothing, every name a placeholder. The
+  slice does not load it and still carries its own copy of the 22 sprites it draws.
+  `node art/check.cjs` validates the bank and fails if those copies drift;
+  `node art/shots.cjs` screenshots the gallery into `art/out/` (gitignored).
 - `sim/` is the economy: agent-based, seeded, fast. `sim/out/` is gitignored.
 - Status: SPEC written 2026-09-25; `sim/economy.py` v0 exists and its 10,000-day, 5-seed sweep
   (`--sweep`, 228 runs) is in SPEC §5: supply is stable iff `(1 − s)·deaths > fresh drops` — flat
