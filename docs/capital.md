@@ -22,10 +22,12 @@ entry price the operator eventually chooses.*
    line SPEC names, and they are not v0. This is the decision the capital question hangs on.
 5. **At the model's scale the economy is small:** 600 delvers put in about $68 a day ($0.11 per
    delver per day, $0.37 per run). With three operator lines that fit the guardrails — an ETH
-   fee on repair, half the ETH side of mints, and the launchpad's creator fee — the operator
-   takes about $0.08 per delver per day. Bare-bones costs then need about 200 delvers, $2,000 a
-   month about 830, the sensible run-rate about 4,400, and $40,000 a month about 16,600 — all
-   proportional to the assumed price scale, and all before taxes or a salary.
+   fee of 0.0012 ETH on each repair, half the ETH side of mints, and the launchpad's creator
+   fee — the operator takes about $0.08 per delver per day (measured: $0.0796). Bare-bones
+   costs then need about 190 delvers, $2,000 a month about 830, the sensible run-rate about
+   4,400, and $40,000 a month about 16,500 — all proportional to the assumed price scale, and
+   all before taxes or a salary. The repair fee is five-sixths of that, and it costs almost no
+   play only because the model's delvers spend about 11 % of their budgets.
 6. **There is no minimum population in the arithmetic.** Delvers' per-head flows are flat from
    about 50 delvers up; the equilibrium holds in a small world. Whether a small world is fun or
    its exchange liquid is untested.
@@ -91,8 +93,8 @@ non-risk revenue line". Nothing reaches the operator. The launchpad SPEC §2 ass
   tokens), credited its creator about 1,540 GOOGL tokens (≈ $530k) in 22 days, 86 % of it in the
   first 2.3 days and about $460 a day since — launch-week attention, not a plan.
 
-Candidate lines, sized per 600 delvers at the model's $11.80 tier-1 kit (arithmetic from §1;
-guardrail readings are inference):
+Candidate lines, sized per 600 delvers at the model's $11.80 tier-1 kit ((a) and (i) MEASURED
+by `sim/operator_fee.py`, the rest arithmetic from §1; guardrail readings are inference):
 
 | Line | Arrives in | Operator must sell token? | Guardrail | $/month | SPEC change |
 |---|---|---|---|---|---|
@@ -104,14 +106,43 @@ guardrail readings are inference):
 | (f) keep the exchange fee instead of burning it | token | **yes** | weakens the burn | 95 | §3.2, §3.7 |
 | (g) a $0.10 ETH ticket per run | ETH | no | none; untested in the sim | 555 | new section |
 | (h) a cut of the stock treasury | ETH | no | same money as (a), shaped like a rake on a prize pot | as (a) | §3.2 |
-| (i) **an ETH fee on repair, 0.0012 ETH** | ETH | no | none found | **1,208** | §3.5 |
+| (i) **an ETH fee on repair, 0.0012 ETH** | ETH | no | none found | **1,211** | §3.5 |
 
-(i) was measured on a patched in-memory copy of `sim/economy2.py` (3 seeds, the reference cell;
-script in the session scratch, not in the repo — **a first look, not a §5 result**): $39.71 a day
-per 600 delvers for 0.8 % fewer runs, burn, minting and supply unchanged. It is nearly free in
-the model because its delvers spend only about 11 % of their budgets; that slack is an assumption
-and the first thing a proper run should stress (wallet cap, income spread). A proper
-pre-registered run belongs in the next sim.
+MEASURED — `sim/operator_fee.py` (SPEC §5): it patches `sim/economy2.py` in memory, never on
+disk, and at zero fee reproduces it exactly; pre-registered (docstring hash `954116052b2b`);
+335 runs × 10,000 days, seeds 0–4; byte-identical on re-run. At the reference cell (s = ⅓, d0
+0.10, 600 delvers):
+
+| repair fee, ETH | token-equivalent | operator $/day | $/month | runs vs no fee | pre-registered rule |
+|---|---|---|---|---|---|
+| 0.0006 | 30 | 19.95 | 607 | −0.5 % | passes in all four cells |
+| **0.0012** | 60 | **39.81** | **1,211** | −0.7 % | **passes in all four cells and all six stress cells** |
+| 0.0024 | 120 | 77.12 | 2,346 | −2.8 % | passes in the four cells, fails four of six stress cells |
+| 0.0048 | 240 | 35.28 | 1,073 | −8.8 % | fails in three of four cells |
+
+The rule: the sim's own verdict unchanged, runs at least 95 % of the fee-free control's, and
+merchants' profit no lower than the control's by more than its spread across seeds. The stress
+cells move the wallet cap (15, 30, 60 days of income) and the income spread (σ 0.8, 1.2).
+
+**Recommended: 0.0012 ETH a repair** — about $3.20, paid every tenth run. It is the fee the
+pre-registered rule picks. It passes everywhere it was tried, costs 0.35–0.74 % of runs in the
+four reference cells ($21–40 a day), and leaves burn, minting, supply and merchants where they
+were. Doubling it doubles the money but fails the stress test: runs fall 5.5–6.8 % when wallets
+hold 60 days of income, and at σ 0.8 one seed's supply drifts just past the 1 %-a-year line.
+Quadrupling it earns less, not more: a tier-1 repair (30 token plus 240 token-equivalent) then
+costs more than minting a new item (220), so delvers scrap worn gear and mint instead, and runs
+fall up to 8.8 %. The lost first look's figures stand (it had $39.71 a day for 0.8 % fewer runs).
+
+Line (a) changes nothing in the model but where the ETH goes — every other figure is identical
+in 100 of 100 paired runs — and pays $7.61 a day here ($17.60–44.60 in the other three cells).
+
+**Who pays, and why it is nearly free** (MEASURED, same runs). The model's delvers spend 11.2 %
+of their ETH budget; the rest overflows a 30-day wallet. The poorest fifth never plays. The top
+three fifths pay the fee in proportion to how often they play, but it is 19 % of the middle
+fifth's income and 3.7 % of the top fifth's: the middle fifth's spending on the game goes from
+23 % of its income to 43 %, and it keeps playing only because the model leaves it that room. Two
+thirds of the runs lost are the second-poorest fifth's. Real budgets are not measured; if real
+players have less room, the fee costs more play than this.
 
 Lines (c), (e) and (f) are out: each needs the operator to hold or sell the token, which is the
 sell pressure the whole design exists to avoid. What remains to put to the operator: **(i) + (a)
@@ -119,16 +150,19 @@ sell pressure the whole design exists to avoid. What remains to put to the opera
 
 ## 4. Break-even
 
-With (a) + (b) + (i) the operator takes $0.0794 per delver per day (arithmetic: 7.61 + 0.37 +
-39.71 = $47.69 a day ÷ 600). Delvers needed, with those playing on a given day in brackets:
+With (a) + (b) + (i) at 0.0012 ETH the operator takes $0.0796 per delver per day: (a) and (i)
+MEASURED together in the same runs (`sim/operator_fee.py`, reference cell, seeds 0–4), (b) is
+0.7 % of the token those runs bought — 7.61 + 0.37 + 39.81 = $47.78 a day ÷ 600. Delvers needed,
+with those playing on a given day in brackets (head-count × 181 runs a day ÷ 600):
 
 | run-rate | $464 (bare-bones) | $2,000 | $5,000 | $10,600 (sensible) | $40,000 |
 |---|---|---|---|---|---|
-| Pons fee only | 24,900 | 107,500 | 268,700 | 569,600 | 2.1 M |
-| + half the mint ETH | 1,150 | 4,940 | 12,360 | 26,200 | 98,900 |
-| + the repair fee | **190 (60)** | **830 (250)** | **2,070 (630)** | **4,390 (1,340)** | **16,600 (5,030)** |
+| Pons fee only | 24,900 | 107,500 | 268,600 | 569,500 | 2.1 M |
+| + half the mint ETH | 1,150 | 4,940 | 12,360 | 26,190 | 98,800 |
+| + the repair fee, 0.0012 ETH | **190 (60)** | **830 (250)** | **2,060 (620)** | **4,380 (1,320)** | **16,500 (4,990)** |
+| *the repair fee at 0.0024 ETH (fails the stress test)* | *110 (30)* | *460 (140)* | *1,160 (340)* | *2,450 (730)* | *9,250 (2,730)* |
 
-Arithmetic: $2,000 ÷ 30.42 days ÷ $0.0794 = 828. A $2 kit multiplies every count by 5.9; a $50
+Arithmetic: $2,000 ÷ 30.42 days ÷ $0.0796 = 826. A $2 kit multiplies every count by 5.9; a $50
 kit divides it by 4.2; demand at any price is unknown. "Delvers" are the model's population, of
 whom about half want to run on a given day and 39 % of those are priced out. For comparison:
 Realm of the Mad God averaged 1,482 concurrent Steam players in September 2026
@@ -235,8 +269,11 @@ pass before any payout contract).
   measurements, the repair-fee run, the break-even framing) was launched and cut off by the
   session limit; the orchestrator re-ran `population.py --repro`, the Pons factory getters and
   `budgets.py` itself. Every other web figure stands on the agent's single reading of its source.
-- The repair-fee result (line (i)) is three seeds on a patched copy; its sensitivity to wallet
-  cap and income spread is untested.
+- The repair-fee result (line (i)) is measured and stress-tested on wallet cap and income
+  spread (§3), but only in the model, where it is nearly free because delvers spend about 11 %
+  of their budgets; real budgets are unmeasured. A token-price move was not run with the fee.
+  By arithmetic (inference), the point where a repair costs more than minting falls from about
+  0.004 ETH to about 0.003 ETH if the token halves in price.
 - Real spend per delver, demand at any entry price, and how many free players would pay: not
   measured anywhere.
 - Growth and churn are not modelled, so "months to break-even" cannot be stated; the budgets
