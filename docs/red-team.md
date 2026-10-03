@@ -7,7 +7,9 @@ judged the merged list against the live chain measurements in `probe/chain/`. A 
 (operator/insider/griefer/legal) and the planned three-skeptic pass were cut off by a session
 limit; the operator and insider cases below come from the other lenses and the orchestrator.
 Every number that came from an in-memory patch of `sim/economy2.py` is marked "probe" and is a
-first look, not a §5 result. Constants used: tier-1 gear 120 token + 0.002 ETH ≈ $12, tier 2
+first look, not a §5 result. The death-rate numbers in the Verdict, A1 and A2 have since been
+redone, pre-registered, five seeds, in `sim/treadmill.py` (SPEC §5), and are marked "measured".
+Constants used: tier-1 gear 120 token + 0.002 ETH ≈ $12, tier 2
 $39, tier 3 $129; repair 30 token; fee 2 %; a third of dead gear recycled; the economy needs one
 run in 7–14 to end in a death.*
 
@@ -15,9 +17,15 @@ run in 7–14 to end in a death.*
 
 1. **The death rate is a treadmill, not a dial.** Organised parties stacking Mend, and plain
    mastery, push deaths under the band with no cheat (A1, A2). Realm of the Mad God's maxed
-   characters die once per 71 dungeons (`docs/capital.md` §6). The sim's own pass mark fails
-   with a fifth fewer deaths. This is the finding that can end the economy, and the fix is
-   economic, not a ban: budget fresh drops against gear actually destroyed, by contract.
+   characters die once per 71 dungeons (`docs/capital.md` §6). Measured (`sim/treadmill.py`):
+   the sim's own pass mark fails with a fifth fewer deaths, or with the most skilled quarter
+   dying a tenth as often. What dies is minting, and with it the mint ETH that funds the
+   piñata; the token burn mostly survives, because repair carries it. The fix is economic, not a
+   ban: budget fresh drops against gear destroyed by death, by contract. At half the gear
+   destroyed it rescues 9 of the 14 failing cases; at today's death rate it costs a third of
+   fresh drops and 4 % of runs. It does not pass where half the players almost never die:
+   minting stays alive, but the sink shrinks with the deaths. No budget makes deaths. A quarter
+   of the gear destroyed held both hard cases it was tried on; all of it fails.
 2. **The wager and the lottery are not yet tied together.** Loot is weighted by contribution and
    level, not by value at risk, so the winning play is the cheapest qualifying kit (B1), many
    cheap wallets (B3), and bought or farmed level (B4, B5). Weight by value wagered and keep
@@ -43,22 +51,34 @@ six members bring Mend and stagger casts; in the slice a cast heals every delver
 for 35 HP on a 9 s cooldown with no cap, so six Menders give about 23 HP/s against 2 HP/s of
 regeneration on a 100 HP body; bolts stop at the first delver they touch and enemies aim at the
 nearest, so a healed front rank absorbs the group's fire; spare seats are sold as carries.
-Nothing in SPEC §2 limits how many bring one skill or how heals stack. Probe (3 seeds): if an
-organised quarter dies a tenth as often, days with any mint fall from 75 % to 39 %; with half,
-to 2 %; tier-1 gear trades at 60 token against 220 to mint. Turning difficulty up lands on the
-unorganised, who then carry 63 % of all deaths. *Test:* the slice's ally bots with Mend on
-staggered timers, 60 seeded runs; a pre-registered sim run of organised fraction × death
-multiplier. *Fix:* fresh drops capped at a share of gear destroyed, in the contract (probe: minting
-holds on 75–83 % of days with the cap, against 2–39 % without); Mend does not stack; bolts hit
-every delver they cross; aim is a weighted roll, not "nearest".
+Nothing in SPEC §2 limits how many bring one skill or how heals stack. Measured
+(`sim/treadmill.py`, 5 seeds): if the most skilled quarter dies a tenth as often, days with any
+mint fall from 75 % to 40 %, under the 50 % pass mark; a third as often is enough to fail
+(49–53 %). With half organised, 2 %, and tier-1 gear trades at 63 token against 220 to mint. The
+least skilled third carries 40 % of deaths when nobody is organised. Turning difficulty up (d0
+0.20) keeps minting alive with half organised (78 % of days) but lands on the unorganised, who
+then carry 63 % of all deaths. *Test:* the slice's ally bots with Mend on staggered timers, 60
+seeded runs. *Fix:* fresh drops capped at a share of gear destroyed, in the contract. Measured:
+at half the gear destroyed, minting holds on 86 % / 75 % of days with a quarter / half
+organised, against 40 % / 2 % without. The half-organised case still misses the pass mark on
+one seed whose item supply drifts up 1.2 % a year. A cap at a quarter of the gear destroyed
+passes it at 90 %. Also: Mend does not stack; bolts hit every delver they cross; aim is a
+weighted roll, not "nearest".
 
 **A2. Getting good.** *(player lens; holds; 4, 5.)* Study public replays of deathless clears,
 recall on a fixed rule, and the population's death rate falls on its own while the sim holds it
-constant for 10,000 days. Probe: days with any mint are 75 % at d0 0.10, 39 % at 0.08, none at
-0.06. The sink is funded by the newest and weakest players and needs a steady supply of them.
+constant for 10,000 days. Measured (`sim/treadmill.py`): days with any mint are 75 % at d0 0.10,
+61 % at 0.09, 38 % at 0.08 (fail), none at 0.06. The line is about one death in 18 runs (5.5–5.8 %
+against 6.5 % today), or 3.2–3.35 % of the value wagered destroyed by death. At d0 0.06 and
+below minting is dead: 57–59 % more runs, on gear at 14–17 % of its mint cost, and the
+treasury's mint ETH stops. The sink is funded by the newest and weakest players and needs a
+steady supply of them.
 *Test:* record deaths by run number in the thirty-run play test; add learning, quitting and
-arrivals to the sim. *Fix:* the same fresh-drop budget; judge the band in value destroyed per
-value wagered rather than deaths per run; let delvers choose a depth with better odds deeper.
+arrivals to the sim. *Fix:* the same fresh-drop budget. Measured: at half the gear destroyed,
+minting holds on 76–90 % of days all the way down to d0 0.05, half today's deaths. At today's
+death rate it costs a third of fresh drops (5.0 to 3.4 a day), 3.7 % of runs and no change in
+the tier-1 price. Also judge the band in value destroyed per value wagered rather than deaths
+per run; let delvers choose a depth with better odds deeper.
 
 ## B. The wager and the lottery
 
@@ -306,6 +326,9 @@ the token leg of the mint by value, not by count — the operator's call, since 
 
 1. **Simulate the death-rate treadmill** (A1, A2): organised fraction × death multiplier,
    learning and arrivals, with and without the fresh-drop budget; pre-registered; a §5 row.
+   *Done in part (`sim/treadmill.py`, §5): organised fraction × multiplier and uniform mastery,
+   with and without the budget. Open: learning and arrivals; b between 0.25 and 0.5 across the
+   grid and its cost at today's death rate; the window; a value-weighted budget.*
 2. **Measure Mend, stripping and the sealed door in the slice** (A1, B1, C2): 60 seeded runs
    each, scripted allies.
 3. **Write the contribution and weighting formula on paper and attack it** (B1–B3) before any
@@ -330,8 +353,11 @@ the token leg of the mint by value, not by count — the operator's call, since 
 - No adversarial pass judged this list; the verdicts are the orchestrator's, informed by the
   live probes. Severity and likelihood are judgements on a 1–5 scale, not measurements.
 - Every "probe" number is three seeds or fewer on a patched copy of `sim/economy2.py` that was
-  not committed; the fresh-drop budget's effect, the organised-party collapse, the W = 0
-  stripping result and the false-print result are all first looks.
+  not committed; the W = 0 stripping result, the price shocks (E1) and the false-print result
+  are first looks. The organised-party collapse and the fresh-drop budget are measured
+  (`sim/treadmill.py`, SPEC §5), but not with learning, quitting or arrivals, a budget weighted
+  by value rather than items, any window but 30 days, or a Mend that has been shown to make
+  anyone nearly deathless.
 - The "buy a block" variant of D1 (a 32 M-gas transaction fills a block and is alone in it) was
   not tested; the odds of being first in a 100 ms window were not measured.
 - WoW Classic Hardcore floods and their remedy (C3), the Meebits mint (D3), RotMG dragging

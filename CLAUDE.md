@@ -75,6 +75,7 @@ node probe/chain/randomness.mjs > probe/chain/out/randomness.txt   # block-hash 
 cd probe/chain/gas && npm ci && node gas.mjs               # per-action gas, local EVM + live replay, ~2 min
 .venv/bin/python sim/population.py                     # minimum viable population on v1: 150 runs, ~5 min on 4 workers; tail -f sim/out/population.log; --repro 6 s
 .venv/bin/python sim/operator_fee.py                   # operator ETH fee on repair, patched v1: 335 runs, ~30 min on 3 workers; tail -f sim/out/operator_fee.log; --repro 23 s, --report, --check
+.venv/bin/python sim/treadmill.py                      # red team A1/A2: organisation x mastery x fresh-drop budget on v1, pre-registered; 210 runs x 10,000 days, ~20 min on 3 workers; tail -f sim/out/treadmill.log; --repro, --report
 ```
 
 ## Working agreements
