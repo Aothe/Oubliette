@@ -170,8 +170,9 @@ Realm of the Mad God averaged 1,482 concurrent Steam players in September 2026
 
 ## 5. Costs
 
-SOURCED benchmarks (2025–26; full table with URLs in the session notes; itemised in `budgets.py`,
-re-run by the orchestrator on 2026-10-03). No vendor was asked for a quote.
+SOURCED benchmarks (2025–26). No vendor was asked for a quote. The full table with URLs and the
+itemising script (`budgets.py`) lived in a session scratch folder that a machine restart wiped on
+2026-10-03; the figures below were read from them before that, but neither can be re-opened now.
 
 | Line | low / base / high | when |
 |---|---|---|
@@ -191,7 +192,8 @@ re-run by the orchestrator on 2026-10-03). No vendor was asked for a quote.
 | Support, cheat review, accounting | 220 / 2.1k / 10.2k | monthly |
 | One salary (web3.career, October 2026) | — / 10.8k / 12.5k | monthly |
 
-**Three budgets** (inference from the unit prices; assumptions in `budgets.py`):
+**Three budgets** (inference from the unit prices; the itemised lines are lost with `budgets.py`,
+so these totals cannot be re-derived from the repo):
 
 - **Bare-bones — $20,900 once, $10,000 held, $464 a month.** v0 scope, under 500 monthly players,
   two boutique auditor-weeks, one scoped opinion, a US LLC, code-drawn art, the operator does
@@ -212,7 +214,8 @@ them, refunds after an incident, and the operator's own living costs. Widest unc
 
 **Infrastructure is not the problem.** The loop prototype's simulation costs about 2 µs per tick
 — 0.012 % of one core per live run — re-verifies a run by replay in about 12 ms, and writes a
-40 KB input log per run (MEASURED, session scratch `loopbench/`). **Paid acquisition cannot pay
+40 KB input log per run (measured on the loop prototype; the benchmark script was in the wiped
+scratch folder, so the figure cannot be re-run as it stands). **Paid acquisition cannot pay
 back:** a first-time minter costs $50–120 by an ad network's own benchmark (HypeLab, 2026-03-05)
 against an $11.80 kit of which the operator keeps nothing; the median mobile game keeps under
 1 % of players to day 30 (GameAnalytics 2026 via gamedevreports, 2026-06-04). Growth has to be
@@ -227,13 +230,15 @@ pass before any payout contract).
 ## 6. What precedents say about the numbers this design guesses
 
 - **The one-third recycle is in good company.** MEASURED from CCP's monthly economic reports
-  (session scratch `mer/eve_mer.py`, four months of 2026): in EVE Online 30 % of the value lost
+  (four months of 2026; the script was in the wiped scratch folder — re-derivable from CCP's
+published monthly economic report data, not re-runnable from this repo): in EVE Online 30 % of the value lost
   in kills dropped as loot and 70 % was destroyed. SOURCED (archived game wiki, 2020–23): Albion
   Online destroys each item with 30 % probability on death and damages the rest; its 2014 alpha
   used 40 %, and its developer wrote that zero destruction would bring "significant item
   inflation" within months and that durability-only loss is gamed by wearing nearly broken gear.
 - **The death rate is the exposed number.** MEASURED from RealmEye graveyards (160 players, 91,036
-  deaths, 1.43 M dungeon completions; session scratch `rotmg/`): Realm of the Mad God characters
+  deaths, 1.43 M dungeon completions; the sampling scripts were in the wiped scratch folder, so
+this is not re-runnable from this repo): Realm of the Mad God characters
   die once per 16 completed dungeons overall, once per 10 when not fully maxed, once per 71 when
   fully maxed; top-rank accounts die a third as often as mid-rank. The sample is biased (players
   who died in the last 24 hours, public profiles, lifetime ratios, mostly easy dungeons, and RotMG
@@ -268,7 +273,12 @@ pass before any payout contract).
 - An adversarial check of these notes (five skeptics: Pons facts, cost sources, precedent
   measurements, the repair-fee run, the break-even framing) was launched and cut off by the
   session limit; the orchestrator re-ran `population.py --repro`, the Pons factory getters and
-  `budgets.py` itself. Every other web figure stands on the agent's single reading of its source.
+  `budgets.py` itself on 2026-10-03. Every other web figure stands on the agent's single reading
+  of its source. **A machine restart then wiped the session scratch folder:** the scripts behind
+  the EVE and RealmEye measurements, the Pons reads, the budget itemising and the loop benchmark
+  are gone. Their figures are as read before the wipe and cannot be re-run from this repo; treat
+  them as sourced-once, not reproducible, until rebuilt in the repo. The population scan and the
+  repair-fee run are committed (`sim/population.py`, `sim/operator_fee.py`) and reproduce.
 - The repair-fee result (line (i)) is measured and stress-tested on wallet cap and income
   spread (§3), but only in the model, where it is nearly free because delvers spend about 11 %
   of their budgets; real budgets are unmeasured. A token-price move was not run with the fee.
