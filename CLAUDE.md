@@ -75,6 +75,7 @@ node probe/chain/randomness.mjs > probe/chain/out/randomness.txt   # block-hash 
 cd probe/chain/gas && npm ci && node gas.mjs               # per-action gas, local EVM + live replay, ~2 min
 .venv/bin/python sim/population.py                     # minimum viable population on v1: 150 runs, ~5 min on 4 workers; tail -f sim/out/population.log; --repro 6 s
 .venv/bin/python sim/operator_fee.py                   # operator ETH fee on repair, patched v1: 335 runs, ~30 min on 3 workers; tail -f sim/out/operator_fee.log; --repro 23 s, --report, --check
+.venv/bin/python sim/treadmill.py                      # red team A1/A2: organisation x mastery x fresh-drop budget on v1, pre-registered; 210 runs x 10,000 days, ~20 min on 3 workers; tail -f sim/out/treadmill.log; --repro, --report
 ```
 
 ## Working agreements
@@ -141,6 +142,13 @@ cd probe/chain/gas && npm ci && node gas.mjs               # per-action gas, loc
 - **Nothing hand-tuned to the token price.** The economy is denominated in it; the fun is not.
 - One counsel pass before any payout contract is written: permadeath + tradeable value +
   dice-roll drops has the lottery shape (SPEC §6).
+- **The death rate is a treadmill, not a dial** (`docs/red-team.md` A1–A2): organisation and
+  mastery push deaths under the band with no cheat. Any rule that keys off deaths per run
+  (the 7–14 % band, a fresh-drop budget) must count value destroyed, not heads, and fresh drops
+  must be budgeted against gear actually destroyed — by contract, not by the server.
+- **Burns and sales on chain cannot be undone.** Settlement may touch only items a player
+  entered into that run; loot is claimed, never pushed; a server secret is committed before
+  every run; a halt rule and a hard run length are written before the server is.
 
 ## Related
 
