@@ -20,6 +20,9 @@ __pycache__/
 proto/*/out/
 art/out/
 
+# the loop prototype's client bundle — built by `npm run build`, never committed
+proto/loop/dist/
+
 # chain probes — outputs and dependencies never committed
 probe/*/out/
 probe/*/*/out/

@@ -17,8 +17,9 @@ not play-to-earn: permadeath is the sink the genre never had.
 
 ## Quick orientation
 
-- Python 3.11 for the simulations (`requirements.txt`, venv at `.venv`). No game engine, no
-  service, no contracts yet. `contracts/` (Foundry) and `game/` come later and are not started.
+- Python 3.11 for the simulations (`requirements.txt`, venv at `.venv`); Node 22 for the probes,
+  the art check and the loop prototype. No game engine, no service, no contracts yet.
+  `contracts/` (Foundry) and `game/` come later and are not started.
 - `proto/visual/` is the visual slice (2026-10-02): one self-contained `index.html`, no build, no
   dependencies, no image files — every sprite is a letter grid in the source, coloured from one
   35-entry palette and drawn at runtime. Placeholder art and invented names (class, boss, items);
@@ -34,6 +35,17 @@ not play-to-earn: permadeath is the sink the genre never had.
   slice does not load it and still carries its own copy of the 22 sprites it draws.
   `node art/check.cjs` validates the bank and fails if those copies drift;
   `node art/shots.cjs` screenshots the gallery into `art/out/` (gitignored).
+- `proto/loop/` is the loop prototype (2026-10-10), SPEC §8 step 3 begun: TypeScript, no runtime
+  dependencies. The slice's dungeon on a deterministic 60 Hz fixed-point tick (`src/sim.ts`:
+  integers only, a committed sine table, rolls from a committed secret), an input log that
+  replays to a hash (`src/log.ts`), scripted delvers with a reaction time (`src/bots.ts`), a
+  bench of the red team's scenarios (`src/bench.ts`, `src/headless.ts`) and a browser client
+  that draws from `art/` and can save and replay any run (`index.html`, `src/client.ts`). New
+  beyond the slice, all from `docs/red-team.md`: the sealed boss door, the halt rule, settlement
+  as the §3.5 lottery with the dead paying a later run and a fresh-drop budget. The bench's
+  danger dial (×4) is where bots land in the economy's band, not a game number. Nobody has
+  played it: fun at $0 is still the open question. `npm run build` bundles the client into
+  `dist/` (gitignored); `out/` holds bench output and screenshots (gitignored).
 - `sim/` is the economy: agent-based, seeded, fast. `sim/out/` is gitignored.
 - `probe/chain/` holds read-only measurements of RH Chain (2026-10-02/03): `census.mjs` (cadence,
   fees, finality, control, infrastructure), `randomness.mjs` (block-hash predictability, the
@@ -57,8 +69,13 @@ not play-to-earn: permadeath is the sink the genre never had.
   `sim/operator_fee.py` (2026-10-03) measures the operator's main line on v1: 0.0012 ETH a
   repair pays $1,211 a month per 600 delvers for < 1 % of runs and survives a wallet / income
   stress; it is nearly free only because the model's delvers spend 11 % of their budgets.
-  Nothing else built. Next: SPEC §8 step 3, or a v2 sim for the gaps §8 step 2 lists (token
-  cash-out, learned merchant spreads, a wealth effect on demand, real budgets).
+  `proto/loop/` (2026-10-10) begins SPEC §8 step 3: the loop on a deterministic fixed-point tick
+  with a replayable log, verified 583/583 and across Node and Chromium; its bot bench puts the
+  economy's death band at ×4 on the danger dial, finds Mend halves deaths, value-weighted rolls
+  remove the strip, and the sealed door shuts out 0.57 of 20 a run (SPEC §5). Next: the
+  thirty-run play test with people on `proto/loop/`; signed input batches (red team D6); or a
+  v2 sim for the gaps §8 step 2 lists (token cash-out, learned merchant spreads, a wealth
+  effect on demand, real budgets).
 
 ## Commands
 
@@ -76,6 +93,10 @@ cd probe/chain/gas && npm ci && node gas.mjs               # per-action gas, loc
 .venv/bin/python sim/population.py                     # minimum viable population on v1: 150 runs, ~5 min on 4 workers; tail -f sim/out/population.log; --repro 6 s
 .venv/bin/python sim/operator_fee.py                   # operator ETH fee on repair, patched v1: 335 runs, ~30 min on 3 workers; tail -f sim/out/operator_fee.log; --repro 23 s, --report, --check
 .venv/bin/python sim/treadmill.py                      # red team A1/A2: organisation x mastery x fresh-drop budget on v1, pre-registered; 210 runs x 10,000 days, ~20 min on 3 workers; tail -f sim/out/treadmill.log; --repro, --report
+cd proto/loop && npm ci && npm run check && npm test && npm run fuzz   # the loop prototype: typecheck, determinism tests, garbage-input fuzz; Node >= 22.6
+npm run bench -- --runs 60                             # the red team's scenarios on scripted delvers at danger x4, ~3 min; out/bench-*.json; `scan` sweeps the danger dial
+npm run build && open index.html                       # bundle the client (dist/, gitignored) and play; save a run, load it in another browser, read the verdict
+node shots.cjs                                         # screenshots into out/ and the in-browser replay check (needs playwright)
 ```
 
 ## Working agreements

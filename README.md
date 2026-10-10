@@ -17,7 +17,9 @@ Permadeath is a sink players choose, and the drama is the point.
 Nothing is built. `SPEC.md` is the design: decisions taken, the mechanism, what is open, what is
 verified and what is assumed, the v0 line. `sim/economy.py` is the first piece of work — an
 agent-based simulation to find the recycle fraction and death rate at which item supply
-stabilises with minting still worth doing, before a single pixel is drawn.
+stabilises with minting still worth doing, before a single pixel is drawn. `proto/loop/` is the
+latest: the game's loop on a deterministic tick whose every run replays to a hash, so the server
+can be checked; whether it is fun with worthless items is the question nobody has yet played.
 
 ```bash
 python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
@@ -33,3 +35,4 @@ python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
 | `CLAUDE.md` | orientation, working agreements and measured facts for anyone (or anything) working here |
 | `proto/visual/` | the visual slice — placeholder pixel art drawn in code, playable; open `index.html` |
 | `art/` | the art bank — every sprite as data, with a gallery page; banked for dungeons after the first; open `index.html` |
+| `proto/loop/` | the loop prototype — the slice on a deterministic fixed-point tick with a replayable input log, scripted delvers and a bench; `npm run build`, then open `index.html` |

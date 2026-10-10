@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Oubliette Loop Prototype</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jacquard+24&family=Jersey+15&display=swap">
+<style>
+/* The slice's ledger, kept: the dungeon is the left page, the wager slip the right. */
+:root{
+  color-scheme:dark;
+  --void:#0d0b14; --stone-1:#17141f; --stone-2:#25212f; --stone-3:#363145; --stone-4:#4c4660; --mute:#9390a3;
+  --bone:#d9cfb4; --verdigris:#5fd1b5; --verdigris-deep:#1c5a5a; --ember:#e8822e; --blood:#c22a3a; --gold:#f2cf5e;
+  --display:'Jacquard 24','Old English Text MT',Georgia,serif;
+  --ui:'Jersey 15',ui-monospace,'Courier New',monospace;
+}
+[hidden]{display:none!important}
+html,body{background:var(--void)}
+body{margin:0;color:var(--bone);font-family:var(--ui);font-size:19px;line-height:1.25;font-weight:400;font-synthesis:none}
+b,strong,h1,h2,h3{font-weight:400}
+.page{max-width:1200px;margin-inline:auto;padding-inline:16px;padding-block:20px 64px;display:flex;flex-direction:column;gap:22px}
+.mast{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 22px}
+h1{font-family:var(--display);font-weight:400;font-size:clamp(46px,7vw,76px);line-height:.9;margin:0;text-shadow:3px 3px 0 var(--verdigris-deep)}
+.mast p{margin:0;color:var(--mute);max-width:62ch}
+.cabinet{display:grid;grid-template-columns:minmax(0,1fr) 276px;gap:16px;align-items:start}
+.left{display:flex;flex-direction:column;gap:8px;min-width:0}
+.stage{position:relative;aspect-ratio:16/10;max-width:100%;background:var(--void);border:2px solid var(--stone-4);box-shadow:0 0 0 2px var(--void),0 0 0 4px var(--stone-2)}
+#game{position:absolute;inset:0;width:100%;height:100%;display:block;image-rendering:pixelated;touch-action:none;cursor:crosshair;outline:none}
+#game:focus-visible{outline:2px solid var(--verdigris);outline-offset:4px}
+.controls{margin:0;padding:0;list-style:none;display:flex;flex-wrap:wrap;gap:2px 18px;font-size:16px;color:var(--mute)}
+.controls b{color:var(--bone)}
+.slip{border:2px solid var(--stone-3);background:var(--stone-1);min-width:0}
+.slip section{padding:11px 13px}
+.slip section + section{border-top:2px dashed var(--stone-3)}
+.slip h2{display:flex;justify-content:space-between;gap:8px;margin:0 0 8px;font-size:15px;letter-spacing:.14em;text-transform:uppercase;color:var(--mute)}
+.slip h2 span{letter-spacing:0;text-transform:none;color:var(--bone);font-variant-numeric:tabular-nums}
+.meter{height:10px;background:var(--void);border:2px solid var(--stone-4)}
+.meter i{display:block;height:100%;background:var(--blood);background-image:repeating-linear-gradient(90deg,transparent 0 7px,rgba(13,11,20,.55) 7px 8px)}
+ul.slots,ul.party,ul.log{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:7px}
+.slots li{display:grid;grid-template-columns:40px minmax(0,1fr);gap:9px;align-items:center}
+.ico{width:40px;height:40px;display:grid;place-items:center;background:var(--void);border:2px solid var(--stone-3)}
+.px{image-rendering:pixelated;display:block}
+.slots .nm{display:block;font-size:18px;line-height:1.05;overflow-wrap:anywhere}
+.slots .meta{display:block;font-size:15px;line-height:1.1;color:var(--mute)}
+.t2 .nm{color:var(--ember)} .t3 .nm{color:var(--verdigris)}
+.t2 .ico{border-color:#8a4a1c} .t3 .ico{border-color:var(--verdigris-deep)}
+.dur{display:block;height:3px;margin-top:3px;background:var(--void)}
+.dur i{display:block;height:100%;background:var(--gold)}
+.empty .nm{color:var(--mute)}
+.bag{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:3px}
+.bag div{aspect-ratio:1;display:grid;place-items:center;background:var(--void);border:2px solid var(--stone-3)}
+.party{max-height:150px;overflow:auto}
+.party li{display:grid;grid-template-columns:76px minmax(0,1fr);gap:8px;align-items:center;font-size:16px}
+.party .meter{height:6px;border-width:1px}
+.party .meter i{background-color:var(--verdigris);background-image:none}
+.party .gone{color:var(--mute);text-decoration:line-through}
+.party .out{color:var(--verdigris)}
+.log{font-size:16px;line-height:1.12;color:var(--mute)}
+.log li:first-child{color:var(--bone)}
+.rec{font-size:15px;color:var(--mute);font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.hint{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);padding:5px 10px;background:rgba(13,11,20,.82);border:2px solid var(--stone-4);font-size:16px;white-space:nowrap;pointer-events:none;transition:opacity .4s}
+.hint.off{opacity:0}
+.overlay{position:absolute;inset:0;display:grid;place-items:center;padding:10px;background:rgba(13,11,20,.5);overflow:auto}
+.panel{width:min(420px,100%);padding:14px 16px 16px;background:var(--stone-1);border:2px solid var(--stone-4);box-shadow:4px 4px 0 var(--void)}
+.panel h2{margin:0;font-family:var(--display);font-weight:400;font-size:44px;line-height:1}
+.dead .panel h2{color:var(--blood)} .out .panel h2{color:var(--verdigris)} .hall .panel h2{color:var(--gold)}
+.panel p{margin:4px 0 10px;font-size:17px;line-height:1.15;color:var(--mute)}
+.fates{margin:0 0 10px;padding:0;list-style:none;display:flex;flex-direction:column;gap:5px;max-height:260px;overflow:auto}
+.fates li{display:grid;grid-template-columns:28px minmax(0,1fr) auto;gap:8px;align-items:center;font-size:18px}
+.stamp{padding:1px 6px;border:2px solid currentColor;font-size:14px;line-height:1.2;letter-spacing:.1em;text-transform:uppercase;transform:rotate(-3deg)}
+.stamp.burn{color:var(--ember)} .stamp.pool{color:var(--verdigris)} .stamp.keep{color:var(--gold)} .stamp.wear{color:var(--mute)} .stamp.won{color:var(--gold)}
+button{font:inherit;color:var(--void);background:var(--bone);border:0;padding:8px 12px;cursor:pointer;box-shadow:3px 3px 0 var(--verdigris-deep)}
+button:hover{background:#fff}
+button:focus-visible{outline:2px solid var(--verdigris);outline-offset:3px}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.skills{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;margin-bottom:8px}
+.skills button,.hold,.pick button{background:var(--void);color:var(--mute);border:2px solid var(--stone-3);box-shadow:none;padding:5px 4px;font-size:15px;line-height:1.05;text-align:center}
+.skills button b{display:block;font-size:18px;color:var(--bone)}
+.skills button.on,.pick button.on{border-color:var(--verdigris);color:var(--bone)}
+.skills button.on b{color:var(--verdigris)}
+.skills button:hover,.hold:hover,.pick button:hover{background:var(--stone-2)}
+.pick{display:flex;gap:5px;margin:6px 0 10px}
+.pick button{flex:1}
+.meter.cool{height:6px;border-width:1px}
+.meter.cool i{background-color:var(--verdigris);background-image:none}
+.hold{display:block;width:100%;margin-top:8px;font-size:16px;touch-action:none;user-select:none;-webkit-user-select:none}
+.hold.on{border-color:var(--verdigris);color:var(--verdigris)}
+.hold.shut{border-style:dashed;color:var(--stone-4);cursor:default}
+.skillnote{margin:8px 0 0;font-size:15px;line-height:1.15;color:var(--mute)}
+.notes h2{margin:0 0 4px;font-family:var(--display);font-weight:400;font-size:38px;line-height:1}
+.notes>p{margin:0 0 16px;color:var(--mute);max-width:65ch}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:18px 28px}
+.cols h3{margin:0 0 6px;font-size:21px;color:var(--verdigris)}
+.cols ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:5px;font-size:18px;line-height:1.2}
+.replay{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:16px;color:var(--mute)}
+.replay input{display:none}
+.replay label,.replay button{font:inherit;font-size:15px;padding:4px 9px;background:var(--void);color:var(--bone);border:2px solid var(--stone-3);box-shadow:none;cursor:pointer}
+.replay label:hover,.replay button:hover{background:var(--stone-2)}
+#verdict{color:var(--verdigris)} #verdict.bad{color:var(--blood)}
+@media(max-width:880px){.cabinet{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:560px){.stage{aspect-ratio:1/1.12}.hint{font-size:14px}}
+</style>
+</head>
+<body>
+<div class="page">
+  <header class="mast">
+    <h1>oubliette</h1>
+    <p>The loop prototype: the slice's dungeon on a deterministic fixed-point tick with an input log. Every run you play can be saved and replayed, here or in another browser, to the same hash.</p>
+  </header>
+
+  <main class="cabinet">
+    <div class="left">
+      <div class="stage" id="stage">
+        <canvas id="game" tabindex="0" aria-label="Oubliette dungeon. Move with W A S D, aim with the mouse, hold the mouse button to fire."></canvas>
+        <div class="hint" id="hint">WASD to move · mouse to aim · hold click to fire · E at the sealed door</div>
+        <div class="overlay hall" id="hall">
+          <div class="panel">
+            <h2>The entry hall</h2>
+            <p id="hallNote">Choose the one skill you wager. It is locked at entry, like everything else you carry in.</p>
+            <div class="skills" id="skills"></div>
+            <h2 style="font-size:15px;font-family:var(--ui);letter-spacing:.14em;text-transform:uppercase;color:var(--mute);margin:10px 0 4px">Delvers in the shard</h2>
+            <div class="pick" id="party"></div>
+            <ul class="fates" id="hallWager"></ul>
+            <div class="row"><button id="delveBtn" type="button">Delve</button><span id="hallPool" style="color:var(--mute);font-size:16px"></span></div>
+          </div>
+        </div>
+        <div class="overlay" id="overlay" hidden>
+          <div class="panel">
+            <h2 id="ovTitle">Forgotten</h2>
+            <p id="ovSub"></p>
+            <ul class="fates" id="ovList"></ul>
+            <p id="ovNote"></p>
+            <div class="row"><button id="ovBtn" type="button">Delve again</button></div>
+          </div>
+        </div>
+      </div>
+      <ul class="controls">
+        <li><b>WASD / arrows</b> move</li>
+        <li><b>Mouse</b> aim, hold to fire · <b>F</b> auto-fire</li>
+        <li><b>Space</b> your skill · <b>P</b> hand your seat to a bot and watch</li>
+        <li><b>R</b> hold three seconds to recall; a hit breaks it; none once the door seals</li>
+        <li><b>E</b> hold on the plate at the boss door to ready; it opens when all are ready or ten seconds after the first</li>
+      </ul>
+      <div class="replay">
+        <button id="saveBtn" type="button">Save replay</button>
+        <label for="loadFile">Load replay</label><input id="loadFile" type="file" accept="application/json">
+        <span id="verdict"></span>
+      </div>
+    </div>
+
+    <aside class="slip" aria-label="Wager slip">
+      <section>
+        <h2>Vitality <span id="hpNum">100 / 100</span></h2>
+        <div class="meter"><i id="hpFill" style="width:100%"></i></div>
+      </section>
+      <section>
+        <h2>Skill <span id="skillNum">Space</span></h2>
+        <div class="meter cool"><i id="skillFill" style="width:100%"></i></div>
+        <p class="skillnote" id="skillNote"></p>
+        <button type="button" class="hold" id="recallBtn">Hold R to recall</button>
+      </section>
+      <section>
+        <h2>At wager <span>lost if you die</span></h2>
+        <ul class="slots" id="wagerList"></ul>
+      </section>
+      <section>
+        <h2>Carried <span>yours if you extract</span></h2>
+        <div class="bag" id="bag"></div>
+      </section>
+      <section>
+        <h2>Delvers <span id="partyNum">4 of 20</span></h2>
+        <ul class="party" id="partyList"></ul>
+      </section>
+      <section>
+        <h2>Boss pool <span id="poolNum">0 relics</span></h2>
+        <ul class="log" id="log"></ul>
+      </section>
+      <section>
+        <div class="rec" id="rec">seed · tick 0</div>
+      </section>
+    </aside>
+  </main>
+
+  <section class="notes">
+    <h2>What is real here</h2>
+    <p>The prototype exists to play the loop and to prove the server can be checked. It decides nothing.</p>
+    <div class="cols">
+      <div>
+        <h3>Taken from the spec and the red team</h3>
+        <ul>
+          <li>A fixed 60 Hz tick in integers: positions in 1/256 px, a sine table, no floats in the state. The hash in the corner is the state; the same inputs give the same hash in any browser.</li>
+          <li>Every input is logged. Save a run and load it in another browser: the verdict says whether it replays to the same hash.</li>
+          <li>Rolls come from a per-tick stream seeded from a committed secret, never from a public block hash a bot could read first.</li>
+          <li>The boss door seals. Ready on the plate; those inside when it seals are locked in with the boss, scaled to their number; those outside are recalled with their wager and no loot.</li>
+          <li>Settlement is the lottery: finishers above a contribution bar share the pool and the fresh drops by a roll weighted by value wagered. The dead's recycled gear pays the next run, never the run it died in.</li>
+          <li>A run lasts at most ten minutes; then it halts where it stopped, deaths stand, the living leave with their wager and no loot.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Still the slice's inventions</h3>
+        <ul>
+          <li>The class, the Turnkey and his phases, every enemy number, every item name and stat.</li>
+          <li>Loot you are carrying is left where you fall when you die.</li>
+          <li>The three skills and their items; Mend does not stack but has no cap.</li>
+          <li>Recall's numbers: three seconds, broken by any hit.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Not in here</h3>
+        <ul>
+          <li>The chain, the exchange and other shards. The other delvers are bots with a reaction time.</li>
+          <li>Signed input batches and receipts: the log is unsigned.</li>
+          <li>Sound, touch controls, and the lottery's contribution formula beyond damage plus healing.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script src="../../art/bank.js"></script>
+<script src="../../art/creatures.js"></script>
+<script src="../../art/items.js"></script>
+<script src="../../art/world.js"></script>
+<script src="dist/client.js"></script>
+</body>
+</html>

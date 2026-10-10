@@ -332,13 +332,24 @@ the token leg of the mint by value, not by count — the operator's call, since 
    with and without the budget. Open: learning and arrivals; b between 0.25 and 0.5 across the
    grid and its cost at today's death rate; the window; a value-weighted budget.*
 2. **Measure Mend, stripping and the sealed door in the slice** (A1, B1, C2): 60 seeded runs
-   each, scripted allies.
+   each, scripted allies. *Done with bots, not people (`proto/loop/`, SPEC §5, 60 runs × 20 at
+   danger ×4): Mend halves deaths and staggering six casts adds nothing within the noise; a
+   budget of half the value destroyed pays 5–17 % of the slice's piñata; skill-only wagers win
+   12 % of prize value for 20 % of the stake under value-weighted rolls, dying 22 % against 14 %;
+   the sealed door shuts out 0.57 of 20 a run on a ten-second count, and the slice's open rule
+   halts 10 % of runs. Open: the same sixty runs with people, and Mend stacking by design.*
 3. **Write the contribution and weighting formula on paper and attack it** (B1–B3) before any
    code; send the stake-weighting question to counsel with the lottery question.
 4. **Fuzz the deterministic sim** (D5) through the loop prototype's headless runner; kill and
-   resume mid-run.
+   resume mid-run. *Done in part (`proto/loop/`): `npm run fuzz` throws garbage inputs and odd
+   configurations at it, 40 runs × 2,500 ticks with no failure; every bench scenario kills one
+   run at tick 1,800 and resumes it from a snapshot to the same hash; the ten-minute halt rule is
+   implemented. Open: fuzzing in CI, and a halt rule written for the contract.*
 5. **Prototype signed input batches and receipts** (D6) in the loop prototype; replay one log
-   through three browser engines (floats are not fixed-point).
+   through three browser engines (floats are not fixed-point). *The log and the replay exist
+   (`proto/loop/`): the state is integers only, headless Chromium and Node replay each other's
+   logs to the same hash, and the client saves and loads a log so another browser can be tried
+   by hand. Open: the batches are unsigned, and no engine but V8 has run one.*
 6. **Contract tests on the first draft** (D2–D4, D8): a fuzzer holding only the settlement key;
    a finisher that always reverts; a double entry; who can move treasury ETH.
 7. **Extend the sim's price shock to 0.1–10× and a pump-then-dump** (E1, E2); measure real Pons
@@ -370,4 +381,6 @@ the token leg of the mint by value, not by count — the operator's call, since 
 - The bot-resistance and loop-design notes the lenses read, and the paper loop prototype whose
   kit damage (B1, B3) and fame (B6) numbers are quoted, were working files of the 2026-10-03
   session and were never committed; those numbers cannot be reproduced from this repo and stand
-  as judgements until a committed prototype measures them.
+  as judgements until a committed prototype measures them. `proto/loop/` (2026-10-10) is the
+  committed loop prototype; its bench re-measures A1, A2, B1 and C2 with scripted delvers
+  (SPEC §5) and its kit numbers, not the paper ones, are the ones to cite.
