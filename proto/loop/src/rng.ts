@@ -42,8 +42,11 @@ export class Rng {
     t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
     return (t ^ (t >>> 14)) >>> 0;
   }
-  /** Uniform integer in [0, n) for 0 < n < 2^21. */
-  below(n: number): number { return Math.floor((this.next() * n) / 4294967296); }
+  /** Uniform integer in [0, n) for 0 < n < 2^21 — the product stays under 2^53, so it is exact. */
+  below(n: number): number {
+    if (!(n > 0 && n < 2097152) || !Number.isInteger(n)) throw new Error(`below(${n}): need an integer in (0, 2^21)`);
+    return Math.floor((this.next() * n) / 4294967296);
+  }
   /** True with probability num/den. */
   chance(num: number, den: number): boolean { return this.below(den) < num; }
   /** Integer in [lo, hi]. */

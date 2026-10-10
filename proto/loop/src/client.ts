@@ -156,11 +156,11 @@ function tick(): void {
   if (!run || run.phase !== "play") return;
   let inputs: readonly (Input | undefined)[];
   if (mode === "live") {
-    inputs = rec!.record(run.tick + 1, squad!.inputs(run, autopilot ? IDLE : playerInput()));
+    inputs = rec!.record(run, squad!.inputs(run, autopilot ? IDLE : playerInput()));
     step(run, inputs); rec!.after(run);
   } else {
     const t = run.tick + 1, L = replayLog!;
-    while (replayFi < L.frames.length && L.frames[replayFi].t === t) { const f = L.frames[replayFi++]; replayCur[f.d] = { ...f.i }; }
+    while (replayFi < L.frames.length && L.frames[replayFi].t <= t) { const f = L.frames[replayFi++]; replayCur[f.d] = { ...f.i }; }
     step(run, replayCur);
     if (replayCi < L.checkpoints.length && L.checkpoints[replayCi].t === run.tick) { if (replayBad === null && stateHash(run) !== L.checkpoints[replayCi].h) replayBad = run.tick; replayCi++; }
     if (L.end && run.tick >= L.end.tick && run.phase === "play") run.phase = "ended";
@@ -230,7 +230,9 @@ function finish(): void {
     note = "Only the seal lets you walk out with loot. Recall saves what you wagered and nothing else."; btn = "Delve again with the same wager";
   }
   showOverlay(cls, title, sub, rows, note, btn, () => {
-    wager = r.status === "dead" ? [] : r.wager.map((w) => ({ ...w.item }));
+    // the result lists only the slots that held something; put each piece back in its slot
+    wager = [null, null, null, null, null];
+    if (r.status !== "dead") for (const w of r.wager) wager[C.ITEMS[w.item.id].slot] = { ...w.item };
     for (const it of r.vaulted) vault.push({ ...it });
     for (const it of r.awarded) vault.push({ ...it });
     if (r.status === "dead") mintFresh();

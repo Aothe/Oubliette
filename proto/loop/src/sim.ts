@@ -9,7 +9,7 @@
 // and settlement as the §3.5 lottery weighted by value wagered behind a contribution bar (B1–B3),
 // with the dead's gear paying a later run (B7, C1) and fresh drops under a budget (A1, A2).
 import { ONE, TILE, TURN, div, floorDiv, px, len, dist2, toward, towardTurned, fromAngle, cos, sin, Q14, sign, abs } from "./fixed.ts";
-import { Rng, Digest, tickRng, settleRng, type RunSeed } from "./rng.ts";
+import { Rng, Digest, tickRng, settleRng, hashInts, type RunSeed } from "./rng.ts";
 import * as C from "./content.ts";
 import { type World, genWorld, boxFree, solidAt, inBossRoom, tileCentre } from "./world.ts";
 
@@ -84,7 +84,33 @@ export function freshKit(skill: C.SkillId, rng: Rng): (C.Item | null)[] {
 }
 export function wagerValue(wager: (C.Item | null)[]): number { let v = 0; for (const it of wager) v += C.itemValue(it); return v; }
 
-export function createRun(cfg: RunConfig): RunState {
+/** Reject a config the simulation could not replay: every number a safe integer, every item known. */
+export function validateConfig(cfg: RunConfig): void {
+  const int = (v: unknown, what: string): void => { if (!Number.isSafeInteger(v)) throw new Error(`config: ${what} must be a safe integer, got ${String(v)}`); };
+  int(cfg.seed.dungeon, "seed.dungeon"); int(cfg.seed.entryBlock, "seed.entryBlock");
+  if (!Array.isArray(cfg.seed.secret) || cfg.seed.secret.length === 0) throw new Error("config: seed.secret must be a non-empty array");
+  cfg.seed.secret.forEach((w, i) => int(w, `seed.secret[${i}]`));
+  for (const k of ["packScale", "hardTicks", "bossHpPerDelver", "danger"] as const) if (cfg[k] !== undefined) int(cfg[k], k);
+  if (cfg.door !== "sealed" && cfg.door !== "open") throw new Error(`config: door must be sealed or open, got ${String(cfg.door)}`);
+  if (!Array.isArray(cfg.delvers) || cfg.delvers.length === 0) throw new Error("config: at least one delver");
+  cfg.delvers.forEach((d, i) => {
+    if (typeof d.name !== "string" || !Array.isArray(d.wager) || d.wager.length !== 5) throw new Error(`config: delver ${i} needs a name and five wager slots`);
+    d.wager.forEach((it, slot) => {
+      if (it === null) return;
+      if (!C.ITEMS[it.id]) throw new Error(`config: delver ${i} slot ${slot}: unknown item ${String(it.id)}`);
+      if (C.ITEMS[it.id].slot !== slot) throw new Error(`config: delver ${i}: ${it.id} does not go in slot ${slot}`);
+      int(it.dur, `delver ${i} slot ${slot} dur`);
+    });
+  });
+}
+function deepFreeze<T>(o: T): T {
+  if (o && typeof o === "object" && !Object.isFrozen(o)) { Object.freeze(o); for (const k of Object.keys(o as object)) deepFreeze((o as Record<string, unknown>)[k]); }
+  return o;
+}
+/** The simulation keeps its own frozen copy of the config: nothing a caller does to its object afterwards reaches a live run. */
+export function createRun(cfgIn: RunConfig): RunState {
+  validateConfig(cfgIn);
+  const cfg = deepFreeze(structuredClone(cfgIn));
   const world = genWorld(cfg.seed.dungeon);
   const rng = tickRng(cfg.seed, 0);
   const [sx, sy] = world.spawn;
@@ -174,7 +200,8 @@ function wakeBoss(s: RunState, n: number): void {
   s.events.push({ k: "wake", n });
 }
 
-function sanitize(i: Input | undefined): Input {
+/** The canonical form of an input: what the simulation acts on, and what the log records. */
+export function sanitize(i: Input | undefined): Input {
   if (!i) return IDLE;
   const num = (v: number, lim: number): number => (Number.isFinite(v) ? Math.max(-lim, Math.min(lim, Math.trunc(v))) : 0);
   return {
@@ -562,12 +589,12 @@ export function settle(s: RunState, opts: SettleOpts): RunResult {
       budget -= value; freshValue += value; freshItems++;
       prizes.push(mkItem(id, rng));
     }
-    for (const it of opts.poolIn.slice(0, C.POOL_MAX)) prizes.push(it);
-    for (const it of opts.poolIn.slice(C.POOL_MAX)) poolOut.push(it);
-    for (const it of s.leftBehind) prizes.push(it);
+    for (const it of opts.poolIn.slice(0, C.POOL_MAX)) prizes.push({ id: it.id, dur: it.dur });
+    for (const it of opts.poolIn.slice(C.POOL_MAX)) poolOut.push({ id: it.id, dur: it.dur });
+    for (const it of s.leftBehind) prizes.push({ id: it.id, dur: it.dur });
   } else {
-    for (const it of opts.poolIn) poolOut.push(it);
-    for (const it of s.leftBehind) poolOut.push(it);
+    for (const it of opts.poolIn) poolOut.push({ id: it.id, dur: it.dur });
+    for (const it of s.leftBehind) poolOut.push({ id: it.id, dur: it.dur });
   }
   prizes.sort((a, b) => C.itemValue(b) - C.itemValue(a) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0) || a.dur - b.dur);
   let awarded = 0;
@@ -589,9 +616,13 @@ export function settle(s: RunState, opts: SettleOpts): RunResult {
 /* ---------- the replay artifact: hash, snapshot, restore ---------- */
 const STATUS_CODE: Record<Status, number> = { in: 0, dead: 1, recalled: 2, extracted: 3, halted: 4 };
 function hashItem(h: Digest, it: C.Item | null): void { if (it) { h.str(it.id); h.add(it.dur); } else h.add(-1); }
-/** A digest of everything that decides the future. Throws on any non-integer. */
+/** A digest of everything that decides the future, the config included. Throws on any non-integer.
+ *  The secret enters as one mixed word; in production the on-chain commitment H(S) would stand here. */
 export function stateHash(s: RunState): string {
   const h = new Digest();
+  const c = s.cfg;
+  h.add(c.seed.dungeon); h.add(c.seed.entryBlock); h.add(hashInts(0xc0, ...c.seed.secret));
+  h.str(c.door); h.add(c.packScale ?? 100); h.add(c.hardTicks ?? C.HARD_TICKS); h.add(c.bossHpPerDelver ?? C.BOSS.hpPerDelver); h.add(c.danger ?? 100);
   h.add(s.tick); h.add(s.phase === "play" ? 0 : 1); h.str(s.reason); h.str(s.door.phase); h.add(s.door.timer); h.add(s.portal ? 1 : 0); h.add(s.nextId);
   h.add(s.delvers.length);
   for (const d of s.delvers) {
@@ -621,5 +652,7 @@ export function snapshot(s: RunState): string {
 }
 export function restore(json: string): RunState {
   const rest = JSON.parse(json) as Omit<RunState, "world" | "events">;
+  validateConfig(rest.cfg);
+  deepFreeze(rest.cfg);
   return { ...rest, world: genWorld(rest.cfg.seed.dungeon), events: [] };
 }

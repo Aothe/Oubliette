@@ -38,15 +38,19 @@ Node 22.6 or later runs the TypeScript directly (`--experimental-strip-types`; a
   block fixed afterwards. The dungeon layout comes from the public dungeon seed alone. The hash
   that stands in for keccak is a 32-bit mixer; nothing depends on which it is.
 - **The input log is the run.** Every delver's input is recorded when it changes, bots' included,
-  with a state hash every 600 ticks and at the end; a replay needs no bot code and names the
-  first checkpoint that disagrees. `snapshot`/`restore` carry everything but the derived world.
+  in its canonical form, with a state hash every 600 ticks and at the end; a replay needs no bot
+  code and names the first checkpoint that disagrees. `snapshot`/`restore` carry everything but
+  the derived world.
+- **The config is part of the state.** A run keeps a frozen copy of its config, refuses one with
+  a non-integer anywhere or an item in the wrong slot, and hashes the seed, the door rule and
+  the dials with the rest, so two states with one hash step the same way under the same inputs.
 - **Checked:** 583 of 583 bench runs replay to their hash; a run killed at tick 1,800 and resumed
   from its snapshot ends on the same hash in every scenario; 40 fuzz runs × 2,500 ticks, 0
   failures; headless Chromium replays the run it played, and Node replays Chromium's log, to the
   same hash. No engine but V8 has run a log yet — save a run in one browser and load it in
   another; the verdict line says whether they agree.
-- **Cost** on this machine: 8, 36 and 255 µs a tick for 4, 20 and 85 delvers in Node; 332 µs a
-  tick at 85 in headless Chromium, 2 % of a 60 Hz frame. A 20-delver run of 5,600 ticks logs
+- **Cost** on this machine: 8, 36 and 255 µs a tick for 4, 20 and 85 delvers in Node; 250–330 µs
+  a tick at 85 in headless Chromium over two runs, 2 % of a 60 Hz frame. A 20-delver run of 5,600 ticks logs
   about 54,000 input frames, about a megabyte of JSON uncompressed, most of it aim; a compact
   encoding is not written.
 

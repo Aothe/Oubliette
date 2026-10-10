@@ -148,6 +148,41 @@ test("settlement: every wagered item of the dead is burned or pooled exactly onc
   assert.equal(n.poolOut.length, 2 + 6 + 1 + 1);
 });
 
+test("config: a run is a frozen copy of its config, the config is in the hash, and a bad config is refused", () => {
+  const cfg = party(21, 2);
+  const a = createRun(cfg);
+  cfg.danger = 999; cfg.seed.secret[0] ^= 1; cfg.delvers[0].wager[0] = null;   // the caller's object, after the fact
+  const b = createRun(party(21, 2));
+  for (let t = 0; t < 300; t++) { step(a, [IDLE, IDLE]); step(b, [IDLE, IDLE]); }
+  assert.equal(stateHash(a), stateHash(b), "mutating the caller's config never reaches a live run");
+  assert.throws(() => { (a.cfg as { danger?: number }).danger = 5; }, "the run's config is frozen");
+  const c = createRun({ ...party(21, 2), danger: 400 }), d = createRun({ ...party(21, 2), danger: 100 });
+  assert.notEqual(stateHash(c), stateHash(d), "two runs that differ only in a dial hash differently at tick 0");
+  for (const bad of [{ danger: 0.5 }, { hardTicks: Infinity }, { bossHpPerDelver: NaN }, { packScale: "300" as unknown as number }]) assert.throws(() => createRun({ ...party(21, 2), ...bad }), JSON.stringify(bad));
+  assert.throws(() => createRun({ ...party(21, 2), seed: { ...seedFrom(21), secret: [1.5] } }));
+  assert.throws(() => createRun({ ...party(21, 2), delvers: [{ name: "x", wager: [null, null, null, null, { id: "wand1", dur: 50 }] }] }), "an item in the wrong slot");
+  assert.throws(() => new Rng(1).below(1 << 21), "below() refuses what it cannot draw exactly");
+});
+
+test("log: the recorder keeps canonical inputs, refuses out-of-order ticks, and the replay tolerates early stamps", () => {
+  const cfg = party(22, 2);
+  const s = createRun(cfg);
+  const rec = new Recorder(cfg);
+  const junk = { mx: 1, my: 0, aim: true, ax: NaN, ay: 1e30, fire: true, skill: false, recall: false, ready: false } as unknown as Input;
+  for (let t = 0; t < 120; t++) step(s, rec.record(s, [junk, IDLE]));
+  assert.equal(rec.log.frames.length, 1, "a NaN aim is canonical after the first frame, so it logs once");
+  assert.equal(rec.log.frames[0].i.ax, 0);
+  assert.throws(() => rec.record({ ...s, tick: s.tick + 5 }, [IDLE, IDLE]), "a skipped tick is refused");
+  cfg.delvers[0].name = "changed";
+  assert.equal(rec.log.cfg.delvers[0].name, "T0", "the log holds its own copy of the config");
+  const r = playRun(SCENARIOS.party4, 6, []);
+  const shifted = JSON.parse(JSON.stringify(r.log));
+  shifted.frames[0].t = 0;                                   // an early stamp must not strand every later frame
+  assert.equal(replay(shifted).ok, true);
+  const noEnd = JSON.parse(JSON.stringify(r.log)); noEnd.end = null;
+  assert.equal(replay(noEnd).ok, true, "a log without an end replays to its last checkpoint or frame");
+});
+
 test("the door: a party readies on the plate, the door opens, seals, and the boss wakes for those inside", () => {
   const r = playRun(SCENARIOS.party4, 5, []);
   assert.ok(r.state.door.phase === "sealed" || r.state.reason === "halt", `door ${r.state.door.phase}, ${r.state.reason}`);

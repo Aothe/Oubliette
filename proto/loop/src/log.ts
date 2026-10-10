@@ -2,7 +2,7 @@
 // the whole run — a bot's inputs are logged like a person's, so a replay needs no bot code — and
 // with the final hash it is the replay artifact of SPEC §3.4: anyone who runs it through the same
 // simulation gets the same deaths. Checkpoints every `checkEvery` ticks locate a divergence.
-import { type Input, type RunConfig, type RunState, IDLE, createRun, step, stateHash } from "./sim.ts";
+import { type Input, type RunConfig, type RunState, IDLE, createRun, step, stateHash, sanitize } from "./sim.ts";
 
 export interface LogFrame { t: number; d: number; i: Input }
 export interface InputLog {
@@ -23,17 +23,25 @@ function copy(i: Input): Input {
 export class Recorder {
   log: InputLog;
   last: Input[];
+  lastTick = 0;
   checkEvery: number;
+  /** Takes its own copy of the config, so the log is the run as created whatever the caller does later. */
   constructor(cfg: RunConfig, checkEvery = 600) {
-    this.log = { v: 1, cfg, frames: [], checkpoints: [], end: null };
-    this.last = cfg.delvers.map(() => copy(IDLE));
+    const own = structuredClone(cfg);
+    this.log = { v: 1, cfg: own, frames: [], checkpoints: [], end: null };
+    this.last = own.delvers.map(() => copy(IDLE));
     this.checkEvery = checkEvery;
   }
-  /** Record the inputs for the tick about to be stepped (state.tick + 1) and return them. */
-  record(tick: number, inputs: readonly (Input | undefined)[]): Input[] {
+  /** Record the inputs for the tick about to be stepped — state.tick + 1 — in their canonical form,
+   *  and return the array to step with. Call it once per tick, before `step`. */
+  record(s: RunState, inputs: readonly (Input | undefined)[]): Input[] {
+    const tick = s.tick + 1;
+    if (s.phase !== "play") throw new Error(`record: the run has ended at tick ${s.tick}`);
+    if (tick !== this.lastTick + 1) throw new Error(`record: tick ${tick} after ${this.lastTick}; one call per tick, in order`);
+    this.lastTick = tick;
     for (let d = 0; d < this.last.length; d++) {
-      const i = inputs[d] ?? IDLE;
-      if (!inputsEqual(i, this.last[d])) { this.last[d] = copy(i); this.log.frames.push({ t: tick, d, i: copy(i) }); }
+      const i = sanitize(inputs[d]);
+      if (!inputsEqual(i, this.last[d])) { this.last[d] = i; this.log.frames.push({ t: tick, d, i: copy(i) }); }
     }
     return this.last;
   }
@@ -45,23 +53,26 @@ export class Recorder {
 }
 
 export interface ReplayResult { state: RunState; hash: string; ok: boolean; divergedAt: number | null; ticks: number }
-/** Run the log through the simulation and compare every checkpoint and the end. */
+/** Run the log through the simulation and compare every checkpoint and the end. A log without an
+ *  end is replayed to its last frame or checkpoint, whichever is later, and must get there. */
 export function replay(log: InputLog, onTick?: (s: RunState) => void): ReplayResult {
   const s = createRun(log.cfg);
   const cur: Input[] = log.cfg.delvers.map(() => copy(IDLE));
-  const endTick = log.end ? log.end.tick : (log.frames.length ? log.frames[log.frames.length - 1].t : 0);
+  const lastFrame = log.frames.length ? log.frames[log.frames.length - 1].t : 0;
+  const lastCheck = log.checkpoints.length ? log.checkpoints[log.checkpoints.length - 1].t : 0;
+  const endTick = log.end ? log.end.tick : Math.max(lastFrame, lastCheck);
   let fi = 0, ci = 0, divergedAt: number | null = null;
   for (let t = 1; t <= endTick && s.phase === "play"; t++) {
-    while (fi < log.frames.length && log.frames[fi].t === t) { const f = log.frames[fi++]; cur[f.d] = copy(f.i); }
+    while (fi < log.frames.length && log.frames[fi].t <= t) { const f = log.frames[fi++]; cur[f.d] = sanitize(f.i); }
     step(s, cur);
     if (onTick) onTick(s);
-    if (ci < log.checkpoints.length && log.checkpoints[ci].t === s.tick) {
-      if (divergedAt === null && stateHash(s) !== log.checkpoints[ci].h) divergedAt = s.tick;
+    while (ci < log.checkpoints.length && log.checkpoints[ci].t <= s.tick) {
+      if (log.checkpoints[ci].t === s.tick && divergedAt === null && stateHash(s) !== log.checkpoints[ci].h) divergedAt = s.tick;
       ci++;
     }
   }
   const hash = stateHash(s);
-  const ok = divergedAt === null && (!log.end || (log.end.hash === hash && log.end.tick === s.tick));
+  const ok = divergedAt === null && s.tick === endTick && (!log.end || log.end.hash === hash);
   if (!ok && divergedAt === null) divergedAt = s.tick;
   return { state: s, hash, ok, divergedAt, ticks: s.tick };
 }

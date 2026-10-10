@@ -89,7 +89,7 @@ export function playRun(sc: Scenario, run: number, poolIn: C.Item[], snapshotAt 
   let snap: string | null = null;
   const t0 = Date.now();
   while (s.phase === "play") {
-    const inputs = rec.record(s.tick + 1, squad.inputs(s));
+    const inputs = rec.record(s, squad.inputs(s));
     step(s, inputs);
     rec.after(s);
     if (snapshotAt && s.tick === snapshotAt) snap = snapshot(s);
@@ -129,7 +129,7 @@ export function resumeCheck(log: InputLog, snap: string, at: number): boolean {
   while (fi < log.frames.length && log.frames[fi].t <= at) { const f = log.frames[fi++]; cur[f.d] = { ...f.i }; }
   const endTick = log.end ? log.end.tick : 0;
   for (let t = at + 1; t <= endTick && s.phase === "play"; t++) {
-    while (fi < log.frames.length && log.frames[fi].t === t) { const f = log.frames[fi++]; cur[f.d] = { ...f.i }; }
+    while (fi < log.frames.length && log.frames[fi].t <= t) { const f = log.frames[fi++]; cur[f.d] = { ...f.i }; }
     step(s, cur);
   }
   return !!log.end && stateHash(s) === log.end.hash && s.tick === log.end.tick;
