@@ -1,9 +1,11 @@
 # Red team: broken strategies and cheats, judged
 
 *2026-10-03. Three independent attackers (protocol, player/guild, market/token) each hunted the
-design as written — SPEC with its §2 decisions on skills and recall, `docs/bot-resistance.md`,
-`docs/loop-design.md`, the v1 simulation — and the orchestrator added its own candidates and
-judged the merged list against the live chain measurements in `probe/chain/`. A fourth lens
+design as written — SPEC with its §2 decisions on skills and recall, the v1 simulation, and two
+working notes of that session, on bot resistance and on loop design (the latter with a paper
+loop prototype), that were never committed to this repo (*Not verified*) — and the orchestrator
+added its own candidates and judged the merged list against the live chain measurements in
+`probe/chain/`. A fourth lens
 (operator/insider/griefer/legal) and the planned three-skeptic pass were cut off by a session
 limit; the operator and insider cases below come from the other lenses and the orchestrator.
 Every number that came from an in-memory patch of `sim/economy2.py` is marked "probe" and is a
@@ -106,9 +108,9 @@ hold every seat in v0's shard for about $236 of gear that is never used up; by t
 prototype's kit numbers eleven tier-1 wallets deal nine times the damage of one tier-3 wallet for
 the same money; a scripted wallet running back-to-back does about 860 runs a day, and under the
 sim's per-head fresh roll draws about 26 fresh items a day against 8 destroyed in the whole
-economy. *Fix:* no per-head or equal-share roll (the bot-resistance note); fresh drops budgeted
-against destruction, in the contract; weight by value at risk; random shard assignment with a
-small party cap; in v0, an allow-list of the twenty known wallets.
+economy. *Fix:* no per-head or equal-share roll (the uncommitted bot-resistance note; rule 2
+below); fresh drops budgeted against destruction, in the contract; weight by value at risk;
+random shard assignment with a small party cap; in v0, an allow-list of the twenty known wallets.
 
 **B4. Levelled wallets for sale; B5. Soulbound is not.** *(market, protocol; hold; 3, 4.)* Any
 rule on an address — level, a progression gate, vesting, "exchange-only" gear, bans, per-wallet
@@ -365,3 +367,7 @@ the token leg of the mint by value, not by count — the operator's call, since 
 - The insider lens did not run: shard assignment by the operator, server-side input censorship
   as a business (D6 covers the mechanism), and cold-start failures (an empty exchange, a token
   nobody sells) are covered only in passing.
+- The bot-resistance and loop-design notes the lenses read, and the paper loop prototype whose
+  kit damage (B1, B3) and fame (B6) numbers are quoted, were working files of the 2026-10-03
+  session and were never committed; those numbers cannot be reproduced from this repo and stand
+  as judgements until a committed prototype measures them.
