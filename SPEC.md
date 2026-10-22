@@ -61,6 +61,15 @@ play-to-earn.
 | The wallet is the login | Entering the game is signing in with a wallet: a character on screen, chat and the three chain actions all need one. Watching needs none — the Gatehouse and a run's delayed feed may be open to anyone without a wallet. *(Operator, 2026-10-22.)* |
 | Equip is entry | One chain action, not two: the kit is at risk only inside a run, so "equipped but not in a run" never exists. Choose the kit and the skill, join the queue, and when the shard forms one entry transaction is relayed; the run's end unlocks it. `docs/chain.md` §4 is read that way, and the sealed door is a hub object because the hub is where the shard forms. *(Operator, 2026-10-20.)* |
 | Healing | **Potions, not regeneration.** A delver brought low heals by drinking a potion — a consumable (§3.5): minted by burning token, dropped by bosses, carried into the run and so at risk, burned on use, traded on the exchange — a merchant good and a sink, not a timer. *(Operator, 2026-10-22, after playing the slice: regeneration let a delver brought low by the boss "just run around and let it refill … maybe isn't the best mechanic"; of the two fixes named — potions, or much slower regeneration when low — "potions is the right direction".)* Open (§4): how a potion is got, how many are carried, how much it heals and how fast, and what natural regeneration remains, if any — to be tried in the slice. |
+| Potions, the numbers | Got both ways — minted by burning token, and dropped by the boss — so they are a sink and a merchant good at once. Carry up to five into a run. The slice starts from: each heals about a third of a delver's health over two seconds; natural regeneration off in combat and slow outside it. *(Operator, 2026-10-22.)* |
+| The ordinary mobs | Tuned harder, together with potions, so a competent delver lands near the band the economy wants — about one run in seven to fourteen ending in a death. Numbers from play, not from a table. *(Operator, 2026-10-22: they "feel a little bit too easy".)* |
+| The village's desks | v0's village has a banker (the strongbox), a broker (the exchange), a smith (mint and repair), a gatekeeper (fettering and the dungeon gate), the Roll of the Forgotten as a wall, and a door to the training ground. *(Operator, 2026-10-22.)* |
+| The call-outs | Eight canned call-outs on the dungeon channel for v0: Boss, Help, On me, Wait, Going in, Leaving, Plate, Thanks. *(Operator, 2026-10-22.)* |
+| The training ground | A door off the village; a one-time, skippable tutorial on first login; a revisitable training ground with practice dummies — slow projectiles, infinite health, standing still or on a set path. Nothing there is wagered, won or counted. *(Operator, 2026-10-22.)* |
+| Dungeon two's band | The band per hour of play: as a dungeon lengthens, each run gets deadlier so that deaths — and the sink — per hour hold (E1, §5: at twice the slice's length, 13 % of runs end in death and mint burn doubles). Tested for feel when dungeon two is prototyped; "more at the door, more at the end" stays untested. *(Operator, 2026-10-22.)* |
+| How the operator is paid | Two of the three lines in `docs/capital.md`: an ETH leg on repair paid to the operator (0.0012 ETH a repair, the measured recommendation, §5) and a share of the ETH side of mints (half, in the model). The third — a launchpad's creator fee — waits on a prior question: whether a launchpad is needed at all to get live, and if so which one, given the NFTs and the exchange the game adds — "I just want a quick stab to see whether or not it's 100% necessary". *(Operator, 2026-10-22.)* |
+| The mint price | The token leg of the mint is set by value, not by a fixed token count, so a move in the token's price does not price players out or in (red team E1 and rule 12 in `docs/red-team.md`); supersedes "a fixed amount of the game token" in the Gear row. The ETH leg is unchanged. How "value" is read — a pool average, an oracle, a peg — is open (§4). *(Operator, 2026-10-22.)* |
+| The exchange's book | On chain: offers placed and filled by the contract, price history free and public, no private order flow, pull-based fills and no recipient callbacks (`docs/chain.md` §4–5). *(Operator, 2026-10-22.)* |
 
 ## 3. Mechanism
 
@@ -216,10 +225,11 @@ X at no less than P), matched by the contract, with price history public. Priced
 token; the fee burned. Items are NFTs, so listings are escrowed; consumables are fungible or
 semi-fungible (ERC-1155) and trade like commodities. Whether the offer book lives fully on chain
 (0.1 s blocks make this plausible on RH Chain) or as an off-chain book with on-chain settlement
-is an open question for the new repo. So is whether the walkable market-city (stalls, a Grand
+is an open question for the new repo — *decided 2026-10-22 (§2): on chain*. So is whether the walkable market-city (stalls, a Grand
 Exchange building) is v1 or later — it is the merchants' *place*, and the place matters to that
 loop the way the dungeon matters to the other. Not v0. *Decided 2026-10-20 (§2): the city is the
-Undercroft, after the one-dungeon release gauges interest; v0 has a one-room Gatehouse instead
+Undercroft, after the one-dungeon release gauges interest; v0 has a village hub instead — a room
+in front of the dungeon in the slice's first cut, a village outside it since 2026-10-22
 (`docs/hub.md`).*
 
 **Reuse:** Vector's fee splitter for the exchange fee; the A1 listing-forensics rig turned on
@@ -257,14 +267,14 @@ the exchange for wash trading and RMT patterns from day one.
   entry signed by the player, pull-based claims, a halt rule, signed inputs with receipts, a
   treasury with no withdraw — must be written before any contract. Twelve rules to decide
   before contracts and a ten-step research agenda are in the note; proposals, not decisions.
-- **Exchange mechanism** — on-chain offer book vs off-chain book with on-chain settlement (§3.7).
+- **Exchange mechanism — decided 2026-10-22 (§2): the on-chain book.** The evidence it rested on:
   The fee is set against the merchant loop, not participation: v1 (§5) — delvers never feel it;
   merchants profit up to 5 % (at `s = ⅓`), break even at 10 %, lose at 20 %. Gas measured
   2026-10-02 (§5): an on-chain offer costs $0.006 to place and $0.006 to fill, a signed off-chain
   order $0 to place and 38 % less to fill; `docs/chain.md` §4–5 recommends the on-chain book for
   v0 (free price history, no private order flow) with pull-based fills and no recipient
   callbacks, and lays out what else goes on chain per run.
-- **How the operator is paid — open, and it decides the capital question** (`docs/capital.md`,
+- **How the operator is paid — decided 2026-10-22 (§2) but for the launchpad question** (`docs/capital.md`,
   2026-10-03). As written, §3.2 sends every dollar a player spends to whoever sold them the
   token or into the drops treasury; cosmetics (§3.5) are the only operator line and are not v0.
   Three lines fit the guardrails and need a decision each: an ETH leg on repair paid to the
@@ -277,7 +287,8 @@ the exchange for wash trading and RMT patterns from day one.
   exchange fee — each needs the operator to hold or sell the token. With all three lines the
   operator takes about $0.08 per delver per day at the model's price scale, so bare-bones costs
   need about 190 delvers and a sensible run-rate about 4,400; the scale is an assumption until
-  real spend per delver is measured.
+  real spend per delver is measured. *Decided (§2, 2026-10-22): the repair leg and the mint share, yes;
+  the creator fee waits on whether a launchpad is needed at all (`docs/launchpad.md`).*
 - **Engine** — a deterministic fixed-tick server in TypeScript or Rust; a canvas/WebGL client
   (Phaser or bespoke). Browser-first: RotMG was a Flash game.
 - **Art pipeline** — the bottleneck. Pixel art is the most tractable style for commission or
@@ -304,8 +315,9 @@ the exchange for wash trading and RMT patterns from day one.
   pre-registered floor; at four times it fails. Raising per-run danger with length (the band per hour
   of play) more than restores the sink — mints double, because boss drops are paid per run — at 13 %
   of runs ending in death at twice the length and 27 % at four times, and 4.5–6.4 % fewer runs. Wear
-  per stage puts repair burn back where it is for about 1 % of runs and does not touch minting. Open
-  to the operator: the band per run (runs as safe as today, a smaller burn per hour) or the band per
+  per stage puts repair burn back where it is for about 1 % of runs and does not touch minting. Decided
+  2026-10-22 (§2): the band per hour, tested for feel when dungeon two is prototyped. The choices were:
+  the band per run (runs as safe as today, a smaller burn per hour) or the band per
   hour (the burn kept, every run deadlier) — or "more at the door, more at the end" (a dearer entry and
   richer drops per run, size as a tier), which E1 did not test; the band-per-hour overshoot suggests a
   longer, deadlier dungeon has room for more drops per run (inference, not run). Also open: the hard
@@ -346,6 +358,12 @@ the exchange for wash trading and RMT patterns from day one.
   cap); what a wallet-less spectator sees of the village and of a run, and with what delay (the run
   feed is delayed anyway, red team rule 8). RotMG's paid vault slots do not transfer, because the
   vault is the wallet, so `docs/capital.md` must not count on them.
+- **Reading the token's value for the mint price** (§2, 2026-10-22). The token leg of a mint is now a
+  value, so something has to say what the token is worth at mint time: a time-weighted average from
+  the launch pool or a DEX pool, an oracle, or a peg the operator sets — and each is a thing an
+  attacker can move or the operator can be accused of moving. The red team's price probes (research
+  agenda item 7: 0.1–10× and a pump-then-dump) are the test, and the choice belongs with the contract
+  rules.
 
 ## 5. Verified vs assumed
 
