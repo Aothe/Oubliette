@@ -56,6 +56,10 @@ play-to-earn.
 | Trade | No trade window — in v0 or planned. The exchange is the trade feature: escrowed offers matched by the contract, the fee burned, price history public (§3.7). Gifts are wallet transfers outside the game. "Direct trade" later means a targeted offer on the same book — one wallet can take it, same escrow, same fee, excluded from price history. Off-exchange transfers skip the fee: accepted as a leak in v0 (the red team sized it at ~7.5 % of the burn) and flagged by the forensics rig; closed later, if it grows, by a burn on first equip by a new owner — never by a transfer allow-list. *(Operator, 2026-10-20, on `docs/chat-trade.md`; definitions asked for and given.)* |
 | Chat | Three channels from the start — **dungeon** (everyone in the run: the one instance of the dungeon), **local** (those on your screen; in the Gatehouse, the room), **private message** (wallet to wallet, by handle; anyone may message anyone) — built so group and guild channels can be added later. On every channel: signed by the session key the player already has, rate-limited, links stripped, a blocked-word list (drawn up when the system is built), nothing in the game ever asks for a signature from inside a message, kept beside the input log and never in it (the log is public before loot can sell, red team rule 8). **Canned call-outs and free text both, in the end; v0 ships canned call-outs** — a fixed menu of short preset messages, nothing to type and nothing to moderate — because they are far easier to build, and free text follows if the play test shows their absence hurts play. *(Operator, 2026-10-20 and 2026-10-22; supersedes the note's "shard and hall only, no whispers".)* |
 | Handles | One chosen handle per wallet, used by chat and by the Roll of the Forgotten; changeable; never unique by force. *(Operator, 2026-10-20.)* |
+| The hub | A one-room **Gatehouse** inside v0, in front of the dungeon: the strongbox (the wallet's unlocked gear — the vault is the wallet, there is no vault contract), the fettering post (choose the kit and the skill to wager), the ledger (the exchange's offers), the door (the shard's head-count, the ready plate, seals when the shard forms), the roll (recent deaths) and the mint. Each a panel over a chain call in the slice's style; no combat, no loot, so it does not run on the deterministic server. The market city stays not-v0: the **Undercroft**, with the Reliquary as its exchange hall, comes after the one-dungeon release gauges interest. **Superseded in part on 2026-10-22, after the operator played the Gatehouse in the slice:** the interactables are liked, but the hub is a **village outside the dungeon**, not a room in front of it — "I would prefer to create an area outside of a quote unquote dungeon … like a village … and then you go to where the dungeons are" — with NPCs behind desks for the bank, the exchange and the rest. The six objects keep their jobs as the village's desks and its gate. *(Operator, 2026-10-20 and 2026-10-22, on `docs/hub.md`.)* |
+| The dead are named | The **Roll of the Forgotten** is public: who died, by chosen handle, wearing what, what came back as loot, how they died, and a link to the run's replay — the delver's persistence across death, the merchants' news feed, and the one place in the Oubliette where nobody is forgotten. *(Operator, 2026-10-20; the cause and the replay 2026-10-22.)* |
+| The wallet is the login | Entering the game is signing in with a wallet: a character on screen, chat and the three chain actions all need one. Watching needs none — the Gatehouse and a run's delayed feed may be open to anyone without a wallet. *(Operator, 2026-10-22.)* |
+| Equip is entry | One chain action, not two: the kit is at risk only inside a run, so "equipped but not in a run" never exists. Choose the kit and the skill, join the queue, and when the shard forms one entry transaction is relayed; the run's end unlocks it. `docs/chain.md` §4 is read that way, and the sealed door is a hub object because the hub is where the shard forms. *(Operator, 2026-10-20.)* |
 
 ## 3. Mechanism
 
@@ -209,7 +213,9 @@ semi-fungible (ERC-1155) and trade like commodities. Whether the offer book live
 (0.1 s blocks make this plausible on RH Chain) or as an off-chain book with on-chain settlement
 is an open question for the new repo. So is whether the walkable market-city (stalls, a Grand
 Exchange building) is v1 or later — it is the merchants' *place*, and the place matters to that
-loop the way the dungeon matters to the other. Not v0.
+loop the way the dungeon matters to the other. Not v0. *Decided 2026-10-20 (§2): the city is the
+Undercroft, after the one-dungeon release gauges interest; v0 has a one-room Gatehouse instead
+(`docs/hub.md`).*
 
 **Reuse:** Vector's fee splitter for the exchange fee; the A1 listing-forensics rig turned on
 the exchange for wash trading and RMT patterns from day one.
@@ -273,7 +279,10 @@ the exchange for wash trading and RMT patterns from day one.
   generative-plus-hand-finish; still needs a source and a budget. Placeholder art for v0 can be
   drawn in code (§5, `proto/visual/`), and art for dungeons after the first is banked the same
   way in `art/` (§5, §7); art direction and anything illustrated still need both.
-- **What persists across death** beyond the vault — fame, unlocks, cosmetics, a pet?
+- **What persists across death** beyond the vault — fame, unlocks, cosmetics, a pet? *The Roll of
+  the Forgotten (§2, 2026-10-20) is the first answer: the name and the death persist, in public.
+  Fame, unlocks and a pet stay open, and the red team's B4 keeps every one of them out of a
+  tradeable roll.*
 - **Skills and recall — decided in §2, the numbers are not.** In the slice (`proto/visual/`):
   three skill items — Slip (a dash through bolts), Mend (heals every delver nearby), Sunder (a
   heavy strike) — chosen in the entry hall and locked once the delver leaves it; recall takes
@@ -317,6 +326,14 @@ the exchange for wash trading and RMT patterns from day one.
   Grand Exchange's four-hour buy limit per item and its cap on open offers per player, two rules the
   exchange does not yet name; and the first-equip burn, to re-run the fee cells of `sim/economy2.py`
   with the burn moved.
+- **The village, and the hub's limits** (`docs/hub.md`). Now that the hub is a village outside the
+  dungeon (§2, 2026-10-22): its size, which NPC desks it has beyond the bank and the exchange, how
+  far the walk to the dungeon is, and whether the Undercroft is then this village grown or a second
+  place; the gate's timer; the instance cap (reference hubs run 16–100; the ledger, the roll and the
+  shard queue must be global, and the queue must span instances or the hub's cap becomes the shard's
+  cap); what a wallet-less spectator sees of the village and of a run, and with what delay (the run
+  feed is delayed anyway, red team rule 8). RotMG's paid vault slots do not transfer, because the
+  vault is the wallet, so `docs/capital.md` must not count on them.
 
 ## 5. Verified vs assumed
 
@@ -344,6 +361,7 @@ filled — every finding with the script or source that proves it.
 | How dungeons should grow after the first, and which interactables fit a co-op permadeath game | **Researched 2026-10-05 from the reference games, sourced; a design judgement, not a measurement** (`docs/dungeons.md`, sources in `docs/dungeons-web-notes.md`). RotMG's hardest dungeon (Oryx's Sanctuary) is the slice's shape with gates — three gated rooms, a miniboss, a corridor, the boss; its 64–81-room mazes work only with teleport and 20–30 people on voice; the room-graph roguelikes (Isaac, Gungeon, Hades, Dead Cells) use 7–12 rooms, one loop, dead ends one room deep. Two-player plates and traps are griefing tools where strangers profit from a death; chosen risk (a dark branch, an optional miniboss) is the lever mastery does not erode. A sizing sketch (`docs/dungeons-layouts.txt`, 20 seeds): the slice ~4.3 min on the spine, the eleven-room graph ~5.3 (7.8 with every side room), a sixteen-room one ~6.9 (11.3). **Decided on it (§2, 2026-10-20):** v0 six rooms plus the sealed door; dungeon two after E1. **Not verified:** E1–E4 are written, not run; typical RotMG run lengths; Hades' chamber counts; RotMG's own generator; the sizing generator was a scratch script and is not in the repo, so its table cannot be re-run; several fandom pages were read through search summaries only | `docs/dungeons.md`; E1–E4 pre-registered there for `sim/economy2.py` in the `sim/treadmill.py` style |
 | How a dead player gets back in, and whether re-entry can be made safe | **Researched 2026-10-05, sourced; design inference, not simulated** (`docs/reentry.md`, sources in `docs/reentry-chat-trade-web-notes.md` part A). Every reference permadeath game re-enters with a new character and banks progress account-side (RotMG, Diablo hardcore, Hades, Dead Cells); Tarkov's Scav run is the free loadout; RotMG closes a dungeon portal 30 s after it opens, so the same instance cannot be rejoined. Same-run re-entry breaks three red team rules until they are in the contract: a death would feed the pool of its own run (rule 3), the cheapest kit would win the lottery (rule 2), and cheap deliberate deaths would count as destruction and unlock fresh drops (rule 1 — `sim/treadmill.py` counts items, not value). A loadout needs no new contract — equipping a kit of four is one $0.004 transaction (the gas row above); a kit NFT costs more gas and makes a contract the recipient (red team D3). **Decided on it (§2):** next-run re-entry in v0, same-run after the rules, the recycled third to a global pool with a delay (2026-10-20); the unwagered run, accepted as a default on 2026-10-20, was reversed on 2026-10-22 for a tutorial and a training ground — nobody enters a real dungeon with nothing at risk. **Not verified:** any RotMG chat or trade gate by rank; Tarkov beyond Wikipedia and one patch report; a batched mint-and-equip (inferred ~$0.03, not measured); whether a live ghost camera harms a co-op shard; none of the rules is simulated — "deliberate cheap deaths under same-run re-entry" is a treadmill probe to run before it ships | `docs/reentry.md` |
 | Whether a chat and a trade window belong in v0, and what each costs | **Researched 2026-10-05, sourced; design inference** (`docs/chat-trade.md`, sources in `docs/reentry-chat-trade-web-notes.md` part B). RotMG never had a market — its market is a fan site and its trade window a documented scam list (the deselect trick, look-alike items, the multi-window swap); OSRS removed free trade in December 2007 against real-money trading and restored it in February 2011 after a referendum, and the RMT moved; the Grand Exchange replaced shouting with matched offers and carries a four-hour buy limit per item and a cap on open offers. Wallet-drainer phishing took about $494 M from 332,000 addresses in 2024 (Scam Sniffer): no links, no signature asked from inside a message. OpenSea abandoned allow-list fee enforcement in August 2023. **Decided on it (§2, 2026-10-20 and 2026-10-22):** no trade window; dungeon, local and private channels, canned call-outs first; one handle per wallet. **Not verified:** any official RotMG chat gate by rank or level; the trade-window countdown; several Tarkov and Diablo IV details come from secondary pages; the 7.5 % and $3-a-day leak figures are the red team's estimates, not measurements | `docs/chat-trade.md` |
+| What a hub is for, and how much of one v0 needs | **Researched 2026-10-05 from eight reference games, sourced; design inference** (`docs/hub.md`, sources in `docs/hub-web-notes.md`). Every hub that works holds something the game cannot take (RotMG's Nexus: the escape, the vault, the portals; OSRS's Grand Exchange: the market as a place; Tarkov's hideout: offline progression); where hubs broke it was chat and crowding, never the vault; RotMG ran nine months with no hub (public January 2010, the Nexus October 2010). Two findings change the spec's picture: the vault is the wallet (equip is a lock flag, `docs/chain.md` §4, so there is no vault contract and no slot revenue), and equip and entry can be one action. The art bank holds the room's props; the cost is the screens. **Decided on it (§2, 2026-10-20):** a one-room Gatehouse in v0; the dead named on the Roll; equip is entry; the Undercroft after the gauge. **Not verified:** fandom and poewiki pages were read via the Wayback Machine; the RotMG Nexus per-instance cap (300) is inferred from the server cap; Sea of Thieves outposts as safe zones; the PoE trade manifesto; every head-count, bandwidth and build-time figure is inference | `docs/hub.md` |
 | A deterministic fixed-tick server sustains ~50–85 players per shard at bullet-hell tick rates in the browser | **assumed** from RotMG's realm cap; measure |
 | RotMG realm cap ≈ 85; permadeath + tradeable items → a decade-old RMT market; the loop retains players with worthless items | **verified 2026-10-01, web.** Realm cap is exactly **85** ([Wikipedia](https://en.wikipedia.org/wiki/Realm_of_the_Mad_God); [RealmEye general realm guide](https://www.realmeye.com/wiki/general-realm-guide) — the cap includes players in the realm's dungeons; full realms queue). **Retention with worthless items:** launched 2011-06-20, still live as Exalt (2020 Unity remaster) — 15 years of permadeath + tradeable items with **no sanctioned cash-out and no standard currency** (item-for-item trade; stat potions as de-facto money). **RMT:** a commercial market operates openly today — [RPGStash](https://www.rpgstash.com/realmofthemadgod/) sells potions and gear for cards/PayPal/BTC with 5-minute delivery, and Steam-group threads hawk life pots for CS:GO/TF2 items — its *age* is not pinned by these sources, so say "live commercial RMT market", not "decade-old", on public surfaces |
 
@@ -374,19 +392,22 @@ filled — every finding with the script or source that proves it.
 **v0 — the vertical slice, the smallest thing that tests "people will burn tokens for gear they can
 lose and trade":** one class · one dungeon · one boss · six rooms in a line behind a sealed boss
 door with a ready plate · ~10 gear items across ~3 tiers · one skill per delver, a wagered item · a
-recall that pays nothing and stops at the boss · one shard (~20 players) · permadeath with vault ·
-re-entry into the next run with a saved loadout · a tutorial and a training ground with practice
-dummies (no wager, no loot) · on-chain mint / equip / unequip / drop · durability + repair kits · a
-minimal offer-based exchange · dungeon, local and private chat beside the log · deterministic server
-with replay · browser client, placeholder pixel art.
+recall that pays nothing and stops at the boss · one shard (~20 players) · a village hub outside the
+dungeon — NPC desks for the strongbox, the fettering, the ledger, the roll and the mint, and the way
+to the dungeon · permadeath with vault · re-entry into the next run with a saved loadout · a
+tutorial and a training ground with practice dummies (no wager, no loot) · on-chain mint / equip /
+unequip / drop · durability + repair kits · a minimal offer-based exchange · dungeon, local and
+private chat beside the log · deterministic server with replay · browser client, placeholder pixel
+art.
 
 **Not v0:** stock/bucket drops (the ETH treasury accumulates, unspent) · world boss across shards ·
-cosmetics · the market city · dungeon two — the eleven-room graph, the dark branch, the key and the
-locked room (`docs/dungeons.md`, after E1) · same-run re-entry (`docs/reentry.md`, after red team
-rules 1–3 are in the contract) · targeted offers (`docs/chat-trade.md`); a trade window, ever ·
-crafting · multiple classes · pets · governance · anything called "expanded gear system" ·
-everything in `art/` that the slice does not already draw (four more dungeon tilesets with their
-casts and bosses, three more class looks, fourteen more gear families).
+cosmetics · the market city — the Undercroft (`docs/hub.md`), after the one-dungeon release gauges
+interest · dungeon two — the eleven-room graph, the dark branch, the key and the locked room
+(`docs/dungeons.md`, after E1) · same-run re-entry (`docs/reentry.md`, after red team rules 1–3 are
+in the contract) · targeted offers (`docs/chat-trade.md`); a trade window, ever · crafting ·
+multiple classes · pets · governance · anything called "expanded gear system" · everything in `art/`
+that the slice does not already draw (four more dungeon tilesets with their casts and bosses, three
+more class looks, fourteen more gear families).
 
 **The first release is the one dungeon, to gauge interest (operator, 2026-10-02).** Art for more
 is banked ahead in `art/` so that continuing is cheap if the interest is there. It is data and a
@@ -408,7 +429,9 @@ before it is built.
    the fee constants before any pixel.**
 3. **Loop design** — one class, one dungeon, on paper and then in a throwaway prototype; the
    only question is whether it is fun with worthless items.
-4. **Vertical slice** (§7).
+4. **Vertical slice** (§7). *Next in the slice (2026-10-20): the sealed boss door with its ready plate
+   and the one-room Gatehouse (`docs/dungeons.md`, `docs/hub.md`), then the thirty-run play test with
+   people — nobody has measured a human death rate, and Mend and recall both lower it.*
 5. Contracts (gear, exchange, treasury) once 2–4 say the thing is worth building; the RH Chain
    `blockhash` probe and the stock-transfer check happen first because both can kill the
    design cheaply. *Before the first line of Solidity: the twelve rules in `docs/red-team.md`

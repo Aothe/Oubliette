@@ -40,11 +40,12 @@ not play-to-earn: permadeath is the sink the genre never had.
   EIP-2935 history window, drand on the BLS precompiles) and `gas/` (a measuring-stick contract
   set, not the contracts, with every action replayed live). Outputs go to `probe/chain/out/` and
   `probe/chain/gas/out/` (gitignored). `docs/chain.md` is the reading.
-- `docs/dungeons.md`, `docs/reentry.md` and `docs/chat-trade.md` are design research for the game
-  after the first dungeon (2026-10-05) — bigger dungeons and interactables, re-entry after death,
-  chat and trade: proposals with their verdicts first; the operator's decisions on them (2026-10-20)
-  are in SPEC §2 and repeated at the end of each. `docs/*-web-notes.md` hold the sourced researcher
-  output behind each, `docs/dungeons-layouts.txt` the sizing sketch.
+- `docs/dungeons.md`, `docs/reentry.md`, `docs/chat-trade.md` and `docs/hub.md` are design research
+  for the game after the first dungeon (2026-10-05) — bigger dungeons and interactables, re-entry
+  after death, chat and trade, the hub: proposals with their verdicts first; the operator's
+  decisions on them (2026-10-20) are in SPEC §2 and repeated at the end of each.
+  `docs/*-web-notes.md` hold the sourced researcher output behind each, `docs/dungeons-layouts.txt`
+  the sizing sketch.
 - Status: SPEC written 2026-09-25; `sim/economy.py` v0 exists and its 10,000-day, 5-seed sweep
   (`--sweep`, 228 runs) is in SPEC §5: supply is stable iff `(1 − s)·deaths > fresh drops` — flat
   at `s = 0`, `d0` 0.10–0.20; flat in circulation only at `s = ⅓` (nothing in v0 buys t2/t3);
@@ -62,8 +63,10 @@ not play-to-earn: permadeath is the sink the genre never had.
   `sim/operator_fee.py` (2026-10-03) measures the operator's main line on v1: 0.0012 ETH a
   repair pays $1,211 a month per 600 delvers for < 1 % of runs and survives a wallet / income
   stress; it is nearly free only because the model's delvers spend 11 % of their budgets.
-  Nothing else built. Next: SPEC §8 step 3, or a v2 sim for the gaps §8 step 2 lists (token
-  cash-out, learned merchant spreads, a wealth effect on demand, real budgets).
+  Nothing else built. Next: the sealed boss door and the Gatehouse in the slice (SPEC §8 step 4;
+  `docs/dungeons.md`, `docs/hub.md`), then the thirty-run play test; E1 (`docs/dungeons.md`) before
+  dungeon two; or a v2 sim for the gaps §8 step 2 lists (token cash-out, learned merchant spreads,
+  a wealth effect on demand, real budgets).
 
 ## Commands
 
