@@ -663,11 +663,14 @@ const stage=$('stage'),canvas=$('game'),ctx=canvas.getContext('2d');
 const buf=cv(320,200),bx=buf.getContext('2d'),dk=cv(320,200),dctx=dk.getContext('2d');
 let zoom=2;
 const keys={};let mouse={bx:0,by:0,wx:0,wy:0,seen:false},mouseDown=false,autoFire=false,touchMode=false,touch=null,hudDirty=true;
+/* The ordinary mobs, tuned harder on 2026-10-22 (the operator: "a little bit too easy"). Before: forgotten hp 34, fire every
+   1.5 s, bolt 68 px/s for 7; shade hp 20, 2.1 s, 58 for 8; gaoler hp 150, 2.7 s, 44 for 11; wake at 125 px, fire within 175. */
 const EDEF={
-  forgotten:{hp:34,spd:26,keep:62,hr:6,fire:1.5},
-  shade:{hp:20,spd:50,keep:48,hr:5,fire:2.1},
-  gaoler:{hp:150,spd:17,keep:44,hr:7,fire:2.7}
+  forgotten:{hp:40,spd:26,keep:62,hr:6,fire:1.25,bspd:76,dmg:9},
+  shade:{hp:24,spd:50,keep:48,hr:5,fire:1.7,bspd:66,dmg:9},
+  gaoler:{hp:170,spd:17,keep:44,hr:7,fire:2.3,bspd:50,dmg:13}
 };
+const WAKE=150,REACH=190;   /* px: a pack wakes together, and shoots from further */
 const NAMES=['Vell','Odric','Tamsin'];
 /* One skill per delver, carried as a wagered item and chosen in the entry hall; cd in ticks.
    Recall is the way out that pays nothing, and there is none once the Turnkey wakes. */
@@ -833,17 +836,17 @@ function updateEnemy(e){
   if(e.dead)return;if(e.flash>0)e.flash--;SRC=e.kind;
   const t=nearestDelver(e.x,e.y);if(!t)return;
   const dx=t.x-e.x,dy=t.y-e.y,d=Math.hypot(dx,dy)||1,D=EDEF[e.kind];
-  if(!e.awake){if(d<125||e.hp<e.max)e.awake=true;else return;}
+  if(!e.awake){if(d<WAKE||e.hp<e.max)e.awake=true;else return;}
   e.face=dx<0?-1:1;let mx=0,my=0;
   if(e.kind==='shade'){const pull=(d-D.keep)/D.keep;mx=-dy/d*e.dir+dx/d*pull;my=dx/d*e.dir+dy/d*pull;}
   else{if(d>D.keep*1.2){mx=dx/d;my=dy/d;}else if(d<D.keep*.7){mx=-dx/d;my=-dy/d;}mx+=-dy/d*e.dir*.5;my+=dx/d*e.dir*.5;}
   const ml=Math.hypot(mx,my)||1;tryMove(e,mx/ml*D.spd/60,my/ml*D.spd/60);
   if(G.rng()<.008)e.dir=-e.dir;
   e.cd--;
-  if(e.cd<=0&&d<175){e.cd=D.fire*60*(.8+G.rng()*.4);const ang=Math.atan2(t.y-5-(e.y-6),dx);
-    if(e.kind==='forgotten')shoot(e.x,e.y-6,ang,68,'bone',7,1);
-    else if(e.kind==='shade')for(let i=-1;i<=1;i++)shoot(e.x,e.y-6,ang+i*.26,58,'purple',8,1);
-    else{const o=G.rng()*.6;for(let i=0;i<10;i++)shoot(e.x,e.y-6,o+i*.6283,44,'red',11,1);}}
+  if(e.cd<=0&&d<REACH){e.cd=D.fire*60*(.8+G.rng()*.4);const ang=Math.atan2(t.y-5-(e.y-6),dx);
+    if(e.kind==='forgotten')shoot(e.x,e.y-6,ang,D.bspd,'bone',D.dmg,1);
+    else if(e.kind==='shade')for(let i=-1;i<=1;i++)shoot(e.x,e.y-6,ang+i*.26,D.bspd,'purple',D.dmg,1);
+    else{const o=G.rng()*.6;for(let i=0;i<10;i++)shoot(e.x,e.y-6,o+i*.6283,D.bspd,'red',D.dmg,1);}}
 }
 function updateBoss(b){
   if(b.flash>0)b.flash--;if(!b.awake)return;SRC='turnkey';
@@ -933,6 +936,31 @@ function update(){
   if(G.gate){const vw=buf.width,vh=buf.height,W=MW*16,H=MH*16;fx=W<=vw?W/2:Math.max(vw/2,Math.min(W-vw/2,fx));fy=H<=vh?H/2:Math.max(vh/2,Math.min(H-vh/2,fy));}
   G.cam.x+=(fx-G.cam.x)*.14;G.cam.y+=(fy-G.cam.y)*.14;
   G.camx=Math.round(G.cam.x-buf.width/2);G.camy=Math.round(G.cam.y-buf.height/2);
+}
+
+/* ---------- a headless autopilot, for proxy.cjs ----------
+   A bot that plays a run the way the ally bots do - walk the rooms in order, kite the nearest foe, dodge bolts,
+   stand on the plate, fight the Turnkey from his keep distance, drink under 40 % - so a change to the mobs can be
+   measured on seeded runs before a person plays it. It is a proxy, not a player: it never uses the skill. */
+function autopilotStep(){const P=G.player;if(P.dead||G.state!=='play')return;
+  touchMode=true;const D=G.door,B=G.boss,br=rooms[5],ap=G.ap;let tx=P.x,ty=P.y,fight=null;
+  if(G.portal){tx=G.portal.x;ty=G.portal.y;}
+  else if(B.awake&&!B.dead)fight=[B,92];
+  else{const f=nearestFoe(P.x,P.y,170);if(f)fight=[f,72];}
+  if(fight){const o=fight[0],keep=fight[1],dx=o.x-P.x,dy=o.y-P.y,d=Math.hypot(dx,dy)||1;
+    if(d>keep+15){tx=P.x+dx/d*24;ty=P.y+dy/d*24;}else if(d<keep-15){tx=P.x-dx/d*24;ty=P.y-dy/d*24;}
+    tx+=-dy/d*ap.dir*16;ty+=dx/d*ap.dir*16;}
+  else if(!G.portal){
+    if(ap.room<5){const r=rooms[ap.room];if(P.x>=r.x*16&&P.x<(r.x+r.w)*16&&P.y>=r.y*16&&P.y<(r.y+r.h)*16&&!G.enemies.some(e=>!e.dead&&e.awake)){ap.room++;ap.wp=0;}}
+    const step=function(wps){let w=wps[ap.wp];if(ap.wp<wps.length-1&&Math.hypot(w[0]-P.x,w[1]-P.y)<6){ap.wp++;w=wps[ap.wp];}tx=w[0];ty=w[1];};
+    if(ap.room<=4){const a=rooms[ap.room-1],b=rooms[ap.room];step([[(b.cx+.5)*16,(a.cy+.5)*16],[(b.cx+.5)*16,(b.cy+.5)*16]]);}
+    else if(D.state==='shut'){tx=D.px+16;ty=D.py+24;}
+    else{const a=rooms[4];step([[(br.cx+.5)*16-40,(a.cy+.5)*16],[(br.cx+.5)*16-40,(br.cy+.5)*16]]);}}
+  let mx=tx-P.x,my=ty-P.y;const ml=Math.hypot(mx,my);if(ml>3){mx/=ml;my/=ml;}else{mx=0;my=0;}
+  for(const b of G.bullets){if(b.from===0)continue;const dx=P.x-b.x,dy=P.y-5-b.y,d2=dx*dx+dy*dy;if(d2<900){const d=Math.sqrt(d2)||1;mx+=dx/d*1.5;my+=dy/d*1.5;}}
+  const l=Math.hypot(mx,my);touch={id:-1,ox:0,oy:0,dx:l>.1?mx/l:0,dy:l>.1?my/l:0};
+  if(P.hp<G.st.maxhp*.4&&G.pouch>0&&P.dcd<=0)drinkHit=true;
+  if(G.tick%240===0)ap.dir=-ap.dir;
 }
 
 /* ---------- end states ---------- */
@@ -1313,7 +1341,14 @@ function start(){
     hurt:function(n){hurtDelver(G.player,n);},boss:function(hp){G.boss.hp=hp;},skill:function(i){pickSkill(i);skillHit=true;},give:function(id){carried.push(mk(id,G.rng));hudDirty=true;},
     delve:function(){if(G.state==='gate')startDelve();},goto:function(id){const o=GATE_OBJECTS.find(x=>x.id===id),x=o.spr?(o.tx+.5)*16:21.5*16,y=o.spr?(o.ty+.5)*16+(o.ty<7?20:-20):7.5*16;G.player.x=x;G.player.y=y;G.allies.forEach((a,i)=>{a.x=Math.max(28,x-20-i*12);a.y=y+8;});},
     use:function(){useHit=true;},close:closePanel,back:function(){$('ovBtn').click();},roll:function(){return ROLL;},vault:function(){return vault;},wager:function(){return wager;},
-    pouch:function(){return G.pouch;},stock:function(n){if(n!==undefined)stock=n;return stock;},drink:function(){drinkHit=true;},mintPotion:function(){stock++;hudDirty=true;}};
+    pouch:function(){return G.pouch;},stock:function(n){if(n!==undefined)stock=n;return stock;},drink:function(){drinkHit=true;},mintPotion:function(){stock++;hudDirty=true;},
+    /* fastRun(seed, {pots, ticks}): a whole run under the autopilot, stepped synchronously with no rendering; returns how it ended */
+    fastRun:function(seed,o){o=o||{};const keep={stock:stock,wager:wager.slice(),sel:skillSel,tm:touchMode,t:touch,af:autoFire,vis:gateVisits};
+      const r=mulberry((seed^0x5EED)>>>0);wager=[mk('wand1',r),mk('robe1',r),mk('ring1',r),null,null];skillSel=0;stock=o.pots===undefined?3:o.pots;autoFire=false;
+      newRun(seed>>>0);G.ap={room:1,wp:0,dir:1};const lim=o.ticks||20000;
+      while(G.state==='play'&&G.tick<lim){autopilotStep();update();}
+      const res={seed:hex(seed),state:G.state,ticks:G.tick,hp:Math.round(G.player.hp),room:G.ap.room,bossWoke:G.boss.awake,bossDead:G.boss.dead,drank:G.drank,pouch:G.pouch,by:G.hitBy||null,allies:G.allies.filter(a=>!a.dead).length};
+      touchMode=keep.tm;touch=keep.t;autoFire=keep.af;wager=keep.wager;skillSel=keep.sel;stock=keep.stock;gateVisits=keep.vis;$('overlay').hidden=true;enterGate();return res;}};
   requestAnimationFrame(frame);
 }
 if(window.claude&&window.claude.hot&&window.claude.hot.ready)window.claude.hot.ready(start);else start();
