@@ -63,7 +63,31 @@ ul.slots,ul.party,ul.log{margin:0;padding:0;list-style:none;display:flex;flex-di
 .overlay{position:absolute;inset:0;display:grid;place-items:center;padding:10px;background:rgba(13,11,20,.5);overflow:auto}
 .panel{width:min(400px,100%);padding:14px 16px 16px;background:var(--stone-1);border:2px solid var(--stone-4);box-shadow:4px 4px 0 var(--void)}
 .panel h2{margin:0;font-family:var(--display);font-weight:400;font-size:44px;line-height:1}
-.dead .panel h2{color:var(--blood)} .out .panel h2{color:var(--verdigris)}
+.dead .panel h2{color:var(--blood)} .out .panel h2{color:var(--verdigris)} .gate .panel h2{color:var(--gold)}
+.btns{display:flex;gap:8px;flex-wrap:wrap}
+button.quiet{background:var(--stone-2);color:var(--bone);box-shadow:3px 3px 0 var(--void)}
+button.quiet:hover{background:var(--stone-3)}
+.body{margin:0 0 10px}
+.body p{margin:0 0 8px}
+.panel p.warn{color:var(--blood)}
+.kit .ico{width:28px;height:28px}
+.body .skills{margin-bottom:0}
+.kit,.roll{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:6px}
+.kit li{display:grid;grid-template-columns:28px minmax(0,1fr) auto;gap:8px;align-items:center;font-size:17px}
+.kit .meta{display:block;font-size:14px;line-height:1.1;color:var(--mute)}
+.kit .empty{color:var(--mute)}
+.kit .acts{display:flex;gap:4px}
+.kit button{padding:3px 8px;font-size:15px}
+.kit .stamp{animation:none;transform:none}
+.roll li{padding:7px 0 2px;border-top:2px dashed var(--stone-3)}
+.roll .who{display:block;margin-bottom:5px;font-size:17px}
+.roll .who b{color:var(--gold)}
+.roll .fates{margin:0 0 4px}
+.roll .fates li{font-size:16px}
+.roll .stamp{animation:none;transform:none;font-size:12px}
+.roll .meta{display:block;font-size:14px;color:var(--mute)}
+.mintrow{display:flex;gap:12px;margin:0 0 8px}
+.mintrow figure{margin:0;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:14px;color:var(--mute);text-align:center;max-width:9ch}
 .panel p{margin:4px 0 10px;font-size:17px;line-height:1.15;color:var(--mute)}
 .fates{margin:0 0 10px;padding:0;list-style:none;display:flex;flex-direction:column;gap:5px}
 .fates li{display:grid;grid-template-columns:28px minmax(0,1fr) auto;gap:8px;align-items:center;font-size:18px}
@@ -127,8 +151,9 @@ button:focus-visible{outline:2px solid var(--verdigris);outline-offset:3px}
             <h2 id="ovTitle">Forgotten</h2>
             <p id="ovSub"></p>
             <ul class="fates" id="ovList"></ul>
+            <div class="body" id="ovBody"></div>
             <p id="ovNote"></p>
-            <button id="ovBtn" type="button">Delve again</button>
+            <div class="btns"><button id="ovBtn" type="button">Delve again</button><button id="ovClose" type="button" class="quiet" hidden>Close</button></div>
           </div>
         </div>
       </div>
@@ -136,7 +161,8 @@ button:focus-visible{outline:2px solid var(--verdigris);outline-offset:3px}
         <li><b>WASD / arrows</b> move</li>
         <li><b>Mouse</b> aim, hold to fire</li>
         <li><b>F</b> auto-fire</li>
-        <li><b>Space</b> your skill; <b>1 2 3</b> choose it in the entry hall</li>
+        <li><b>Space</b> your skill in the dungeon, or use a thing in the Gatehouse (<b>E</b> too)</li>
+        <li><b>1 2 3</b> choose your skill before the door seals</li>
         <li><b>R</b> hold three seconds to recall; a hit breaks it; none at the boss</li>
         <li><b>Touch</b> drag to move, bolts aim themselves</li>
       </ul>
@@ -155,7 +181,7 @@ button:focus-visible{outline:2px solid var(--verdigris);outline-offset:3px}
         <button type="button" class="hold" id="recallBtn">Hold R to recall</button>
       </section>
       <section>
-        <h2>At wager <span>lost if you die</span></h2>
+        <h2>At wager <span id="wagerNote">lost if you die</span></h2>
         <ul class="slots" id="wagerList"></ul>
       </section>
       <section>
@@ -196,6 +222,7 @@ button:focus-visible{outline:2px solid var(--verdigris);outline-offset:3px}
           <li>One skill per delver, wagered and lost like any other piece.</li>
           <li>You may recall before the boss, never at him. The loot is for those who lock in.</li>
           <li>The boss door is sealed. Stand on the plate for three seconds: those on it go through and the door seals behind them; anyone else recalls with their wager. The Turnkey is measured to the head-count.</li>
+          <li>Every run starts in the Gatehouse: a strongbox, a fettering post, a ledger, the shard door, the Roll of the Forgotten and the mint. Nothing is at risk until the door seals, and nothing enters with nothing at stake.</li>
         </ul>
       </div>
       <div>
@@ -207,6 +234,7 @@ button:focus-visible{outline:2px solid var(--verdigris);outline-offset:3px}
           <li>Boss drops fall as bags to pick up. The spec's weighted lottery is not modelled.</li>
           <li>The three skills and their items: Slip (Moth Feather), Mend (Moss Poultice), Sunder (Breaker's Maul). Minting one is free here.</li>
           <li>Recall's numbers: three seconds, broken by any hit. It saves what you wagered and leaves what you carried, so only the seal pays.</li>
+          <li>The Gatehouse's shape and furniture, and the mint's prices (120 token + 0.002 ETH a set) are placeholders. The ledger lists nothing: there is no exchange here.</li>
         </ul>
       </div>
       <div>
@@ -343,6 +371,13 @@ const TURNKEY=TURNKEY_L.map(r=>r+r.split('').reverse().join(''));
 /* the boss door: the art bank's portcullis, a mirrored half */
 const PORTCULLIS_L=["..kkkkkk","..kmkmkm","..kmkmkm","..kiiiii","..kmkmkm","..kmkmkm","..kmkmkm","..kiiiii","..kmkmkm","..kmkmkm","..kmkmkm","..kiiiii","..kmkmkm","..kmkmkm","...m.m.m","........"];
 const PORTCULLIS=PORTCULLIS_L.map(r=>r+r.split('').reverse().join(''));
+/* the Gatehouse's furniture, copied from art/world.js */
+const CHEST=["..kkkkkkkk..",".kWWWWWWWWk.","kWlWWWWWWlWk","kWWWWWWWWWWk","kggggGGggggk","kkkkkGGkkkkk","kWWWWggWWWWk","kWlWWWWWWlWk","kwwwwwwwwwwk","kkkkkkkkkkkk"];
+const PILLAR=[".kkkkkkkkkk.","k5666666655k","k4555555544k",".kkkkkkkkkk.","..k565554k..","..k565554k..","..k565554k..","..k565554k..","..k565554k..","..k565554k..","..k565554k..","..k565554k..","..k565554k..","..k565554k..","..k565554k..","..k565554k..",".kkkkkkkkkk.","k5666666655k","k4444444444k","kkkkkkkkkkkk"];
+const BOOKSHELF_L=["kkkkkkkk","kwwwwwww","kwekpkgk","kwekpktk","kwekpktk","kwwwwwww","kwtkgkRk","kwtkgkRk","kwtkgkRk","kwwwwwww","kwpkbkek","kwpkbkek","kwpkbkek","kwwwwwww","kwwwwwww","kkkkkkkk"];
+const BOOKSHELF=BOOKSHELF_L.map(r=>r+r.split('').reverse().join(''));
+const BANNER=["kkkkkkkkkk","kggggggggk",".kRRRRRRk.",".kRRRRRRk.",".kRRGGRRk.",".kRGRRGRk.",".kRGRRGRk.",".kRRGGRRk.",".kRRGRRRk.",".kRRGGRRk.",".kRRGRRRk.",".kRRRRRRk.",".kRRkkRRk.",".kRk..kRk.",".kk....kk."];
+const BRAZIER=[["....y..y....","...yYyyYy...","..oyYYYYyo..","..ooyYYyoo..",".kkkkkkkkkk.",".kiiiiiiiik.","..kiiiiiik..","...kkiikk...","....kiik....","....kiik....","...kiiiik...","..kkkkkkkk.."],["...y...y....","..yYy.yYy...","..oyYYYYyo..","..ooyYYyoo..",".kkkkkkkkkk.",".kiiiiiiiik.","..kiiiiiik..","...kkiikk...","....kiik....","....kiik....","...kiiiik...","..kkkkkkkk.."]];
 const TORCH=[
 ["..y...",".yYy..",".yYYy.","oyYYyo","oyYyoo",".ooyo.","..ww..","..ww.."],
 ["...y..","..yYy.",".yYYy.","oyYYyo","ooyYyo",".oyoo.","..ww..","..ww.."],
@@ -532,7 +567,7 @@ function buildSprites(){
   S.forgotten=bundle(spr(FORGOTTEN));S.shade=bundle(spr(SHADE));S.gaoler=bundle(spr(GAOLER));S.turnkey=bundle(spr(TURNKEY));
   S.torch=TORCH.map(t=>spr(t));
   S.bag=[null,spr(BAG),spr(BAG,{W:'p',w:'v',l:'P',n:'#'}),spr(BAG,{W:'G',w:'g',l:'Y',n:'#'})];
-  S.grave=spr(GRAVE);S.portcullis=spr(PORTCULLIS);S.bone=spr(BONE,{B:'n',b:'5'});S.skull=spr(SKULL,{B:'n',b:'5'});S.flask=spr(FLASK);
+  S.grave=spr(GRAVE);S.portcullis=spr(PORTCULLIS);S.gate={chest:spr(CHEST),pillar:spr(PILLAR),bookshelf:spr(BOOKSHELF),banner:spr(BANNER,{R:'d',G:'T'}),brazier:BRAZIER.map(f=>spr(f))};S.bone=spr(BONE,{B:'n',b:'5'});S.skull=spr(SKULL,{B:'n',b:'5'});S.flask=spr(FLASK);
   S.b={bolt1:spr(DIA5,{a:'t',A:'T'}),bolt2:spr(DIA5,{a:'T',A:'#'}),bolt3:spr(DIA7,{a:'t',A:'T'}),ally:spr(DIA5,{a:'d',A:'t'}),
     bone:spr(ORB5,{a:'n',A:'B'}),purple:spr(ORB5,{a:'p',A:'P'}),red:spr(ORB5,{a:'e',A:'y'}),orange:spr(ORB5,{a:'o',A:'Y'}),big:spr(ORB7,{a:'r',A:'o'})};
   S.bcol={bolt1:'#5fd1b5',bolt2:'#5fd1b5',bolt3:'#5fd1b5',ally:'#2f8f83',bone:'#d9cfb4',purple:'#a678e0',red:'#c22a3a',orange:'#e8822e',big:'#e8822e'};
@@ -582,19 +617,21 @@ function genMap(rng){
     if(near)map[yy*MW+xx]=2;}
   prerender(rng);
 }
-function prerender(rng){
+function prerender(rng,gate){
   mapCv=cv(MW*16,MH*16);const g=mapCv.getContext('2d');g.fillStyle=PAL.k;g.fillRect(0,0,mapCv.width,mapCv.height);torches=[];
-  for(let y=0;y<MH;y++)for(let x=0;x<MW;x++){const t=map[y*MW+x],px=x*16,py=y*16;
+  const fl=v=>v===3?1:v,atf=(x,y)=>fl(at(x,y));   /* 3 = a Gatehouse thing: solid to walk, floor to draw; never in a dungeon map */
+  for(let y=0;y<MH;y++)for(let x=0;x<MW;x++){const t=fl(map[y*MW+x]),px=x*16,py=y*16;
     if(t===1){{const fv=rng();g.drawImage(TILES.floor[fv<.86?(fv*30|0)%3:fv<.93?3:4],px,py);}
       if(at(x,y-1)===2){g.fillStyle='rgba(8,6,14,.45)';g.fillRect(px,py,16,3);g.fillStyle='rgba(8,6,14,.25)';g.fillRect(px,py+3,16,2);}}
     else if(t===2){
-      if(at(x,y+1)===1){g.drawImage(TILES.face[(x+y)&1],px,py);
+      if(atf(x,y+1)===1){g.drawImage(TILES.face[(x+y)&1],px,py);
         if((x*7+y*13)%5===0)torches.push({x:px+8,y:py+8,ph:(x*31+y*17)%64});
         else if(rng()<.08){for(let i=0;i<8;i++){g.fillStyle=i%2?PAL.i:PAL.m;g.fillRect(px+7+(i%2),py+3+i,1,1);}g.fillStyle=PAL.m;g.fillRect(px+6,py+11,3,3);g.fillStyle=PAL['2'];g.fillRect(px+7,py+12,1,1);}}
       else{g.drawImage(TILES.top,px,py);g.fillStyle=PAL['3'];
-        if(at(x,y-1)===1)g.fillRect(px,py,16,2);
-        if(at(x-1,y)===1)g.fillRect(px,py,2,16);
-        if(at(x+1,y)===1)g.fillRect(px+14,py,2,16);}}}
+        if(atf(x,y-1)===1)g.fillRect(px,py,16,2);
+        if(atf(x-1,y)===1)g.fillRect(px,py,2,16);
+        if(atf(x+1,y)===1)g.fillRect(px+14,py,2,16);}}}
+  if(gate){for(let y=0;y<MH;y++)for(let x=0;x<MW;x++){if(map[y*MW+x]!==1)continue;const q=rng();if(q<.03)g.drawImage(S.bone,x*16+3+(rng()*4|0),y*16+5+(rng()*5|0));}return;}
   /* the seal in the boss room */
   const br=rooms[5],bcx=(br.x+br.w/2)*16,bcy=(br.y+br.h/2)*16;
   for(let a=0;a<6.2832;a+=.004){for(const rr of [[104,72],[97,66]]){const X=Math.round(bcx+Math.cos(a)*rr[0]),Y=Math.round(bcy+Math.sin(a)*rr[1]);
@@ -639,16 +676,16 @@ function stats(){const w=wager[0]?wager[0].d.tier:0,a=wager[1]?wager[1].d.tier:0
   return {dmg:[8,12,17,24][w],maxhp:[80,100,130,170][a],rate:[.26,.22,.19,.16][r],light:wager[3]?114:88,bolt:'bolt'+(w||1)};}
 function log(s){G.log.unshift(s);if(G.log.length>5)G.log.pop();hudDirty=true;}
 
-function newRun(seed,fresh){
+function newRun(seed){
   seed=seed>>>0;const rng=mulberry(seed);
-  if(fresh)wager=[mk('wand1',rng),mk('robe1',rng),mk('ring1',rng),null,null];
+  rng();rng();rng();   /* three draws, where the first kit was once minted from this stream: kept so the seed-0x0B11E77E dungeon stays as first seen */
   if(!wager[4]||wager[4].d.skill!==skillSel)wager[4]={d:ITEMS[SKILLIDS[skillSel]],dur:90};   /* no rng: the seed's dungeon must not move */
-  carried=[];genMap(rng);
+  MW=128;MH=60;carried=[];genMap(rng);
   const r0=rooms[0],sx=(r0.cx+.5)*16,sy=(r0.cy+.5)*16;
   const r4=rooms[4],r5=rooms[5],dcol=r5.x-2;   /* the corridor's only tiles at that column: rows r4.cy-1..r4.cy+1 */
   const door={x:dcol,y0:r4.cy-1,y1:r4.cy+1,px:(dcol-2)*16,py:(r4.cy-1)*16,pw:32,ph:48,open:false,state:'shut',t:0,n:0,through:0,hinted:false};
   G={seed:seed,rng:rng,tick:0,state:'play',bullets:[],bags:[],parts:[],texts:[],graves:[],enemies:[],allies:[],log:[],pool:0,
-     shake:0,flash:0,locked:false,nag:0,portal:null,portalAt:0,cam:{x:sx,y:sy},camx:0,camy:0,st:stats(),rolls:null,deadAt:0,full:0,door:door};
+     shake:0,flash:0,locked:true,nag:0,portal:null,portalAt:0,cam:{x:sx,y:sy},camx:0,camy:0,st:stats(),rolls:null,deadAt:0,full:0,door:door,gate:false,near:null,hitBy:null};
   G.player={x:sx,y:sy,hw:4,hh:3,hp:G.st.maxhp,face:1,cd:0,flash:0,moving:false,skin:0,dead:false,name:'You',scd:0,scdMax:1,dash:0,ddx:0,ddy:0,recall:0,rlock:0};
   skillHit=false;
   const off=[[-16,-10],[14,-12],[-4,16]];
@@ -659,8 +696,9 @@ function newRun(seed,fresh){
     for(let j=0;j<p.length;j+=2)for(let n=0;n<p[j+1];n++)spawnEnemy(p[j],(r.x+1.5+rng()*(r.w-3))*16,(r.y+1.5+rng()*(r.h-3))*16);}
   const br=rooms[5];
   G.boss={x:(br.x+br.w/2)*16,y:(br.y+br.h/2)*16,hx:(br.x+br.w/2)*16,hy:(br.y+br.h/2)*16,hw:10,hh:6,hp:3600,max:3600,hr:13,t:0,a:0,ph:1,awake:false,dead:false,flash:0,face:1};
-  log('Four delvers enter. Seed '+hex(seed)+'.');
-  $('overlay').hidden=true;hudDirty=true;
+  log('The door seals behind four delvers. '+SKILLS[skillSel].name+' is locked in. Seed '+hex(seed)+'.');
+  const h=$('hint');h.textContent=(touchMode||COARSE)?'Drag to move · bolts aim themselves':'WASD to move · mouse to aim · hold click to fire';h.classList.remove('off');
+  $('overlay').hidden=true;$('overlay').className='overlay';panel=null;hudDirty=true;
 }
 function hex(n){return ('0000000'+(n>>>0).toString(16).toUpperCase()).slice(-8);}
 function spawnEnemy(kind,x,y){const D=EDEF[kind];G.enemies.push({kind:kind,x:x,y:y,hw:4,hh:3,hp:D.hp,max:D.hp,hr:D.hr,awake:false,dead:false,cd:30+G.rng()*60,dir:G.rng()<.5?1:-1,flash:0,face:1,ph:G.rng()*100});}
@@ -668,7 +706,8 @@ function spawnEnemy(kind,x,y){const D=EDEF[kind];G.enemies.push({kind:kind,x:x,y
 /* ---------- simulation ---------- */
 function boxFree(x,y,hw,hh){return !solid(x-hw,y-hh)&&!solid(x+hw,y-hh)&&!solid(x-hw,y+hh)&&!solid(x+hw,y+hh);}
 function tryMove(e,dx,dy){if(boxFree(e.x+dx,e.y,e.hw,e.hh))e.x+=dx;if(boxFree(e.x,e.y+dy,e.hw,e.hh))e.y+=dy;}
-function shoot(x,y,ang,spd,kind,dmg,from,life){G.bullets.push({x:x,y:y,vx:Math.cos(ang)*spd/60,vy:Math.sin(ang)*spd/60,k:kind,dmg:dmg,from:from,life:life||300,r:kind==='big'||kind==='bolt3'?3:2});}
+let SRC=null;   /* which enemy kind is firing, for the Roll of the Forgotten */
+function shoot(x,y,ang,spd,kind,dmg,from,life){G.bullets.push({x:x,y:y,vx:Math.cos(ang)*spd/60,vy:Math.sin(ang)*spd/60,k:kind,dmg:dmg,from:from,life:life||300,r:kind==='big'||kind==='bolt3'?3:2,src:from?SRC:null});}
 function addText(x,y,s,col,life,sc){G.texts.push({x:x,y:y,s:s,col:col,life:life||40,sc:sc||1});}
 function puff(x,y,n,cols,spd,life){for(let i=0;i<n;i++){const a=Math.random()*6.2832,v=(.2+Math.random())*(spd||1);
   G.parts.push({x:x,y:y,vx:Math.cos(a)*v,vy:Math.sin(a)*v-.2,life:(life||24)+Math.random()*14,col:cols[(Math.random()*cols.length)|0],s:Math.random()<.3?2:1});}}
@@ -685,8 +724,7 @@ function updatePlayer(P){
   if(touch){ix=touch.dx;iy=touch.dy;}
   const l=Math.hypot(ix,iy);P.moving=l>.15;
   if(P.scd>0)P.scd--;if(P.rlock>0)P.rlock--;
-  const r0=rooms[0],B0=G.boss;
-  if(!G.locked&&(P.x<r0.x*16||P.x>=(r0.x+r0.w)*16||P.y<r0.y*16||P.y>=(r0.y+r0.h)*16)){G.locked=true;hudDirty=true;log('You leave the hall with '+wager[4].d.name+'. '+SKILLS[skillSel].name+' is locked in.');}
+  const B0=G.boss;
   if(keys.r&&B0.awake&&G.tick-G.nag>70){G.nag=G.tick;addText(P.x,P.y-32,B0.dead?'Use the seal':'No way back',PAL.e,60);}
   const rec=!!keys.r&&P.rlock<=0&&P.dash<=0&&!B0.awake;
   if(P.dash>0){P.dash--;tryMove(P,P.ddx*5.5,P.ddy*5.5);if(!RM)puff(P.x,P.y-5,1,[PAL.T,PAL.t],.3,10);}
@@ -717,8 +755,9 @@ function updateDoor(){
   if(D.state==='shut'){
     const cx=D.px+16,cy=D.py+24,dd=Math.hypot(P.x-cx,P.y-cy);
     if(!D.hinted&&dd<96){D.hinted=true;addText(cx,D.py-14,'Stand on the plate',PAL.T,110);log('A sealed door. Whoever stands on the plate when it fires goes through; the rest recall.');}
+    if(G.gate&&!wager.slice(0,4).some(Boolean)){if(onPlate(P)&&G.tick-G.nag>70){G.nag=G.tick;addText(P.x,P.y-32,'Nothing fettered',PAL.e,70);}D.t=0;D.n=0;return;}
     if(onPlate(P)){D.n=1;for(const a of G.allies)if(!a.dead&&onPlate(a))D.n++;
-      if(++D.t>=DOOR_T){D.state='open';D.open=true;D.t=0;let n=1;
+      if(++D.t>=DOOR_T){if(G.gate){startDelve();return;}D.state='open';D.open=true;D.t=0;let n=1;
         for(const a of G.allies){if(a.dead)continue;if(onPlate(a)){a.through=true;n++;}else recallAlly(a);}
         D.through=n;G.boss.max=G.boss.hp=Math.round(3600*DOOR_SCALE(n));G.shake=Math.max(G.shake,3);
         addText((D.x+.5)*16,D.py-14,'The door opens',PAL.T,110);log('The door opens for '+n+'. The Turnkey is measured to '+n+'.');hudDirty=true;}}
@@ -729,7 +768,7 @@ function updateDoor(){
 }
 function pickSkill(i){
   if(G.state==='play'&&G.locked){if(i!==skillSel&&G.tick-G.nag>50){G.nag=G.tick;addText(G.player.x,G.player.y-32,'Locked in',PAL['6'],50);}return;}
-  skillSel=i;if(G.state==='play')wager[4]={d:ITEMS[SKILLIDS[i]],dur:wager[4]?wager[4].dur:90};hudDirty=true;
+  skillSel=i;if(G.state==='play'||G.state==='gate')wager[4]={d:ITEMS[SKILLIDS[i]],dur:wager[4]?wager[4].dur:90};hudDirty=true;if(panel==='post')openPanel('post');
 }
 function useSkill(P,ix,iy,l,ax,ay){
   const k=SKILLS[skillSel];P.scd=P.scdMax=k.cd;
@@ -765,7 +804,7 @@ function updateAlly(a){
   a.hp=Math.min(a.max,a.hp+1.2/60);if(a.flash>0)a.flash--;
 }
 function updateEnemy(e){
-  if(e.dead)return;if(e.flash>0)e.flash--;
+  if(e.dead)return;if(e.flash>0)e.flash--;SRC=e.kind;
   const t=nearestDelver(e.x,e.y);if(!t)return;
   const dx=t.x-e.x,dy=t.y-e.y,d=Math.hypot(dx,dy)||1,D=EDEF[e.kind];
   if(!e.awake){if(d<125||e.hp<e.max)e.awake=true;else return;}
@@ -781,7 +820,7 @@ function updateEnemy(e){
     else{const o=G.rng()*.6;for(let i=0;i<10;i++)shoot(e.x,e.y-6,o+i*.6283,44,'red',11,1);}}
 }
 function updateBoss(b){
-  if(b.flash>0)b.flash--;if(!b.awake)return;
+  if(b.flash>0)b.flash--;if(!b.awake)return;SRC='turnkey';
   b.t++;const f=b.hp/b.max,ph=f>.66?1:f>.33?2:3;
   if(ph!==b.ph){b.ph=ph;G.shake=6;addText(b.x,b.y-44,ph===2?'He rattles his keys':'The last lock',PAL.o,110);for(let i=0;i<24;i++)shoot(b.x,b.y-12,i*.2618,50,'orange',9,1);}
   const tx=b.hx+Math.cos(b.t*.006)*46,ty=b.hy+Math.sin(b.t*.0085)*26,dx=tx-b.x,dy=ty-b.y,d=Math.hypot(dx,dy);
@@ -801,8 +840,8 @@ function updateBoss(b){
     if(b.t%150===0){const o=G.rng();for(let i=0;i<10;i++)shoot(b.x,b.y-12,o+i*.6283,30,'big',20,1,420);}
   }
 }
-function hurtDelver(t,dmg){t.hp-=dmg;t.flash=6;addText(t.x-6,t.y-22,'-'+dmg,PAL.e,34);
-  if(t===G.player){G.shake=Math.max(G.shake,3);if(t.recall>0)addText(t.x,t.y-32,'Recall broken',PAL.e,50);t.recall=0;t.rlock=30;}
+function hurtDelver(t,dmg,src){t.hp-=dmg;t.flash=6;addText(t.x-6,t.y-22,'-'+dmg,PAL.e,34);
+  if(t===G.player){G.shake=Math.max(G.shake,3);if(src)G.hitBy=src;if(t.recall>0)addText(t.x,t.y-32,'Recall broken',PAL.e,50);t.recall=0;t.rlock=30;}
   if(t.hp<=0)killDelver(t);else if(t!==G.player)hudDirty=true;}
 function killDelver(t){
   t.dead=true;t.hp=0;G.graves.push({x:t.x,y:t.y,name:t.name});puff(t.x,t.y-6,26,[PAL.o,PAL.y,PAL.r,PAL['5']],1.4,34);G.shake=Math.max(G.shake,6);
@@ -843,14 +882,15 @@ function updateBullets(){
           if(dx*dx+dy*dy<rr*rr){B.hp-=b.dmg;if(G.tick-(B.fAt||0)>14){B.flash=2;B.fAt=G.tick;}gone=true;if(b.k!=='ally')addText(B.x-8+Math.random()*16,B.y-34,b.dmg,PAL.B,26);if(B.hp<=0)killBoss(B);}}
       }else{
         for(const t of delvers()){if(t.dash>0)continue;const dx=t.x-b.x,dy=t.y-5-b.y,rr=b.r+3.5;
-          if(dx*dx+dy*dy<rr*rr){hurtDelver(t,b.dmg);gone=true;break;}}
+          if(dx*dx+dy*dy<rr*rr){hurtDelver(t,b.dmg,b.src);gone=true;break;}}
       }}
     if(gone){if(b.life>0)puff(b.x,b.y,3,[S.bcol[b.k]],.5,8);bs.splice(i,1);}}
 }
 function update(){
   G.tick++;const P=G.player;
-  if(G.state==='play'){updatePlayer(P);if(G.state==='play')updateDoor();}
-  if(G.state!=='out'){
+  if(G.state==='gate'){updateGatePlayer(P);updateDoor();if(G.state!=='gate')return;for(const a of G.allies)updateAlly(a);}
+  else if(G.state==='play'){updatePlayer(P);if(G.state==='play')updateDoor();}
+  if(G.state!=='out'&&!G.gate){
     for(const a of G.allies)if(!a.dead)updateAlly(a);
     for(const e of G.enemies)updateEnemy(e);
     if(!G.boss.dead)updateBoss(G.boss);
@@ -862,7 +902,9 @@ function update(){
   if(G.portalAt&&G.tick===G.portalAt){G.portal={x:G.boss.hx,y:G.boss.hy};log('The seal opens. Stand on it to extract.');}
   if(G.state==='dead'&&G.tick-G.deadAt===80)showDeath();
   if(G.shake>0)G.shake*=.88;if(G.flash>0)G.flash--;
-  const fx=P.x,fy=P.y-4;G.cam.x+=(fx-G.cam.x)*.14;G.cam.y+=(fy-G.cam.y)*.14;
+  let fx=P.x,fy=P.y-4;
+  if(G.gate){const vw=buf.width,vh=buf.height,W=MW*16,H=MH*16;fx=W<=vw?W/2:Math.max(vw/2,Math.min(W-vw/2,fx));fy=H<=vh?H/2:Math.max(vh/2,Math.min(H-vh/2,fy));}
+  G.cam.x+=(fx-G.cam.x)*.14;G.cam.y+=(fy-G.cam.y)*.14;
   G.camx=Math.round(G.cam.x-buf.width/2);G.camy=Math.round(G.cam.y-buf.height/2);
 }
 
@@ -876,7 +918,9 @@ function showDeath(){
   const ul=$('ovList');ul.textContent='';let p=0;
   G.rolls.forEach((r,i)=>{if(r.pool)p++;ul.append(fateRow(S.icon[r.item.d.id],r.item.d.name,r.pool?'To the pool':'Burned',r.pool?'pool':'burn',i));});
   $('ovNote').textContent=(G.rolls.length-p)+' burned for good. '+p+' returned to the pool for whoever finishes the boss.'+(carried.length?' The '+carried.length+' you were carrying stay where they fell.':'');
-  const b=$('ovBtn');b.textContent='Mint a fresh set and delve again';b.onclick=function(){newRun(G.seed*1664525+1013904223,true);canvas.focus();};
+  const b=$('ovBtn');b.textContent='Back to the Gatehouse';b.hidden=false;$('ovClose').hidden=true;$('ovBody').textContent='';
+  b.onclick=function(){ROLL.unshift({seed:G.seed,tick:G.tick,by:KILLERS[G.hitBy]||'the dark',items:G.rolls.map(r=>({item:r.item,pool:r.pool})),carried:carried.length});
+    wager=[null,null,null,null,null];carried=[];nextSeed=G.seed*1664525+1013904223;enterGate();canvas.focus();};
   ov.hidden=false;
 }
 function extract(){
@@ -885,9 +929,9 @@ function extract(){
   const ul=$('ovList');ul.textContent='';let i=0;
   for(const it of carried)ul.append(fateRow(S.icon[it.d.id],it.d.name,'Vaulted','keep',i++));
   for(const it of wager){if(!it)continue;const w=6+((G.rng()*7)|0);it.dur=Math.max(0,it.dur-w);ul.append(fateRow(S.icon[it.d.id],it.d.name,'-'+w+' wear','wear',i++));}
-  $('ovNote').textContent='Next delve wagers the best piece you own in each slot. Better gear, more to lose.';
-  const b=$('ovBtn');b.textContent='Wager the best and delve again';
-  b.onclick=function(){for(const it of carried){const s=it.d.slot;if(!wager[s]||wager[s].d.tier<it.d.tier)wager[s]=it;}newRun(G.seed*1664525+1013904223,false);canvas.focus();};
+  $('ovNote').textContent='What you carried goes to the strongbox; the best piece you own in each slot is fettered for the next delve. Better gear, more to lose.';
+  const b=$('ovBtn');b.textContent='Back to the Gatehouse';b.hidden=false;$('ovClose').hidden=true;$('ovBody').textContent='';
+  b.onclick=function(){vault.push(...carried);carried=[];nextSeed=G.seed*1664525+1013904223;enterGate();const n=fetterBest();if(n)log('Fettered the best piece you own in each slot.');canvas.focus();};
   log('You extract with '+carried.length+' pieces.');ov.hidden=false;hudDirty=true;
 }
 
@@ -899,10 +943,127 @@ function recallOut(){
   for(const it of wager){if(!it)continue;const w=6+((G.rng()*7)|0);it.dur=Math.max(0,it.dur-w);ul.append(fateRow(S.icon[it.d.id],it.d.name,'-'+w+' wear','wear',i++));}
   $('ovNote').textContent=(n?n+' left for whoever breaks the Turnkey. ':'')+'Only the seal lets you walk out with loot. Recall saves what you wagered and nothing else.';
   carried=[];G.player.recall=0;puff(G.player.x,G.player.y-6,30,[PAL.T,'#ffffff'],1.6,30);
-  const b=$('ovBtn');b.textContent='Delve again with the same wager';
-  b.onclick=function(){newRun(G.seed*1664525+1013904223,false);canvas.focus();};
+  const b=$('ovBtn');b.textContent='Back to the Gatehouse';b.hidden=false;$('ovClose').hidden=true;$('ovBody').textContent='';
+  b.onclick=function(){nextSeed=G.seed*1664525+1013904223;enterGate();canvas.focus();};
   log('You recall. '+n+' left behind.');ov.hidden=false;hudDirty=true;
 }
+
+/* ---------- the Gatehouse ---------- */
+/* One room in front of the dungeon (SPEC §2 "The hub"): no combat, no loot, and off the run's RNG, so a seed's dungeon
+   does not move. Six things to walk up to, each a panel over what would be a chain call: the Strongbox (what you hold,
+   safe), the Fettering post (what you wager), the Ledger (the exchange: not built), the Door (the shard forms on its
+   plate), the Roll of the Forgotten (this session's deaths, by name) and the Mint (a tier-I set; placeholder prices). */
+const GATE_W=24,GATE_H=14;
+const GATE_OBJECTS=[
+  {id:'strongbox',name:'Strongbox',tx:3,ty:1,spr:'chest'},
+  {id:'post',name:'Fettering post',tx:8,ty:1,spr:'pillar'},
+  {id:'ledger',name:'Ledger',tx:13,ty:1,spr:'bookshelf'},
+  {id:'roll',name:'Roll of the Forgotten',tx:18,ty:1,spr:'banner'},
+  {id:'mint',name:'The Mint',tx:4,ty:11,spr:'brazier'},
+  {id:'door',name:'The shard door',tx:22,ty:7,spr:null}];
+const KILLERS={forgotten:'one of the Forgotten',shade:'a Shade',gaoler:'a Gaoler',turnkey:'the Turnkey'};
+const COARSE=!!(window.matchMedia&&window.matchMedia('(pointer: coarse)').matches);
+let vault=[],ROLL=[],nextSeed=0x0B11E77E,gateRng=mulberry(0x6A7E),panel=null,useHit=false,gateVisits=0;
+function gateMap(){MW=GATE_W;MH=GATE_H;map=new Uint8Array(MW*MH);map.fill(2);rooms=[];
+  for(let y=1;y<=12;y++)for(let x=1;x<=21;x++)map[y*MW+x]=1;
+  for(let y=6;y<=8;y++){map[y*MW+22]=1;map[y*MW+23]=1;}
+  for(const o of GATE_OBJECTS)if(o.spr)map[o.ty*MW+o.tx]=3;}
+function refreshStats(){G.st=stats();if(G.gate)G.player.hp=G.st.maxhp;hudDirty=true;}
+function mintSet(first){const set=[mk('wand1',gateRng),mk('robe1',gateRng),mk('ring1',gateRng)];
+  for(const it of set){const s=it.d.slot;if(!wager[s])wager[s]=it;else vault.push(it);}
+  if(!first)log('Minted a tier-I set: 120 token + 0.002 ETH burned. Placeholder amounts.');refreshStats();}
+function fetterBest(){let n=0;for(let s=0;s<4;s++){let best=wager[s],bi=-1;
+    vault.forEach((it,i)=>{if(it.d.slot===s&&(!best||it.d.tier>best.d.tier||(it.d.tier===best.d.tier&&it.dur>best.dur))){best=it;bi=i;}});
+    if(bi>=0){if(wager[s])vault.push(wager[s]);wager[s]=vault.splice(bi,1)[0];n++;}}
+  refreshStats();return n;}
+function swapSlot(s){const i=vault.findIndex(it=>it.d.slot===s);if(i<0)return;const next=vault.splice(i,1)[0];if(wager[s])vault.push(wager[s]);wager[s]=next;refreshStats();}
+function keepSafe(s){if(!wager[s])return;vault.push(wager[s]);wager[s]=null;refreshStats();}
+function startDelve(){log('The shard forms: four delvers. The door seals.');newRun(nextSeed);}
+function enterGate(){
+  gateMap();prerender(mulberry(0x6A7E0),true);
+  const sx=11.5*16,sy=7.5*16;
+  const door={x:22,y0:6,y1:8,px:20*16,py:6*16,pw:32,ph:48,open:false,state:'shut',t:0,n:0,through:0,hinted:true};
+  G={seed:nextSeed,rng:gateRng,tick:0,state:'gate',gate:true,bullets:[],bags:[],parts:[],texts:[],graves:[],enemies:[],allies:[],log:[],pool:0,
+     shake:0,flash:0,locked:false,nag:0,portal:null,portalAt:0,cam:{x:sx,y:sy},camx:0,camy:0,st:stats(),rolls:null,deadAt:0,full:0,door:door,near:null,hitBy:null,
+     boss:{x:0,y:0,hx:0,hy:0,hw:0,hh:0,hp:0,max:1,hr:0,t:0,a:0,ph:1,awake:false,dead:true,flash:0,face:1}};
+  G.player={x:sx,y:sy,hw:4,hh:3,hp:G.st.maxhp,face:1,cd:0,flash:0,moving:false,skin:0,dead:false,name:'You',scd:0,scdMax:1,dash:0,ddx:0,ddy:0,recall:0,rlock:0};
+  const off=[[-16,-10],[14,-12],[-4,16]],spots=[[17,10],[19,11],[16,12]];
+  for(let i=0;i<3;i++)G.allies.push({x:(spots[i][0]+.5)*16,y:(spots[i][1]+.5)*16,ox:off[i][0]*1.4,oy:off[i][1]*1.4,hw:4,hh:3,hp:80,max:80,face:-1,cd:20,flash:0,
+    moving:false,skin:i+1,dead:false,name:NAMES[i],dir:i%2?1:-1,dmg:8,skill:.55+i*.2});
+  carried=[];skillHit=false;useHit=false;panel=null;
+  if(!wager[4]||wager[4].d.skill!==skillSel)wager[4]={d:ITEMS[SKILLIDS[skillSel]],dur:90};
+  if(++gateVisits===1){mintSet(true);log('The Gatehouse. A tier-I set is minted for you; the Mint sells more. Nothing is at risk until the door seals.');}
+  else log('The Gatehouse. Nothing is at risk here.'+(wager.slice(0,4).some(Boolean)?'':' Nothing fettered: the Mint sells a tier-I set.'));
+  refreshStats();
+  const h=$('hint');h.textContent=(touchMode||COARSE)?'Drag to walk · tap a thing to use it':'WASD to walk · Space to use a thing · 1 2 3 your skill';h.classList.remove('off');
+  const ov=$('overlay');ov.hidden=true;ov.className='overlay';hudDirty=true;
+}
+function updateGatePlayer(P){
+  let ix=((keys.d||keys.arrowright)?1:0)-((keys.a||keys.arrowleft)?1:0),iy=((keys.s||keys.arrowdown)?1:0)-((keys.w||keys.arrowup)?1:0);
+  if(touch){ix=touch.dx;iy=touch.dy;}
+  const l=Math.hypot(ix,iy);P.moving=!panel&&l>.15;
+  if(P.moving){const sp=64/60*Math.min(1,touch?l:1);tryMove(P,ix/l*sp,iy/l*sp);if(Math.abs(ix)>.2)P.face=ix<0?-1:1;}
+  if(P.flash>0)P.flash--;P.hp=G.st.maxhp;
+  let near=null,bd=1e9;
+  for(const o of GATE_OBJECTS){const ax=(o.tx+.5)*16,ay=(o.ty+.5)*16,dx=Math.abs(P.x-ax),dy=Math.abs(P.y-ay);if(dx<24&&dy<24&&dx+dy<bd){bd=dx+dy;near=o;}}
+  G.near=near;
+  if((skillHit||useHit)&&!panel&&near)openPanel(near.id);
+  skillHit=useHit=false;
+}
+function kitRow(it,stampText,cls,meta){const li=el('li',it?'t'+it.d.tier:'empty');li.style.setProperty('--i',0);
+  const ic=el('div','ico');if(it)ic.append(iconEl(S.icon[it.d.id],2));
+  const body=el('div');body.append(el('span','nm',it?it.d.name:'Nothing'),el('span','meta',meta));
+  li.append(ic,body);if(stampText){const st=el('span','stamp '+cls,stampText);li.append(st);}return li;}
+function openPanel(id){
+  panel=id;const ov=$('overlay'),ul=$('ovList'),body=$('ovBody'),note=$('ovNote'),btn=$('ovBtn'),cl=$('ovClose');
+  ov.className='overlay gate';ul.textContent='';body.textContent='';note.textContent='';note.className='';btn.hidden=true;cl.hidden=false;cl.onclick=closePanel;
+  const o=GATE_OBJECTS.find(x=>x.id===id);$('ovTitle').textContent=o.name;
+  const fettered=wager.slice(0,4).filter(Boolean);
+  if(id==='strongbox'){$('ovSub').textContent='What you hold. Nothing in here can be lost.';const kit=el('ul','kit');let n=0;
+    for(let s=0;s<4;s++)if(wager[s]){n++;kit.append(kitRow(wager[s],'Fettered','keep',SLOTS[s]+' · tier '+ROMAN[wager[s].d.tier]+' · at risk once the door seals'));}
+    for(const it of vault){n++;kit.append(kitRow(it,'Safe','pool',SLOTS[it.d.slot]+' · tier '+ROMAN[it.d.tier]+' · '+it.dur+'% sound'));}
+    if(n)body.append(kit);else body.append(el('p','','Empty. The Mint sells a tier-I set, and what you extract lands here.'));
+    note.textContent='The vault is the wallet: a piece is at risk only inside a run.';}
+  else if(id==='post'){$('ovSub').textContent='Choose what you wager. It locks when the door seals.';const kit=el('ul','kit');
+    for(let s=0;s<4;s++){const it=wager[s],spares=vault.filter(x=>x.d.slot===s).length;
+      const li=kitRow(it,null,null,it?SLOTS[s]+' · tier '+ROMAN[it.d.tier]+' · '+it.dur+'% sound':SLOTS[s]+(spares?' · '+spares+' in the strongbox':' · none owned'));
+      const acts=el('div','acts');
+      if(spares){const b=el('button','quiet','Swap');b.type='button';b.onclick=function(){swapSlot(s);openPanel('post');};acts.append(b);}
+      if(it){const b=el('button','quiet','Keep safe');b.type='button';b.onclick=function(){keepSafe(s);openPanel('post');};acts.append(b);}
+      li.append(acts);kit.append(li);}
+    body.append(kit);
+    const sk=el('div','skills');SKILLS.forEach((k,i)=>{const b=el('button',i===skillSel?'on':'');b.type='button';b.append(el('b','',(i+1)+' '+k.name),document.createTextNode(k.note));b.onclick=function(){pickSkill(i);};sk.append(b);});
+    body.append(el('p','','One skill per delve, a wagered item like the rest. Minting it is free here.'),sk);
+    if(vault.length){const b=el('button','quiet','Fetter the best of everything');b.type='button';b.style.marginTop='8px';b.onclick=function(){fetterBest();openPanel('post');};body.append(b);}
+    note.textContent=fettered.length?'Fettered: '+fettered.map(x=>x.d.name).join(', ')+'.':'Nothing fettered. Nothing enters with nothing at stake.';if(!fettered.length)note.className='warn';else note.className='';}
+  else if(id==='ledger'){$('ovSub').textContent='The exchange\'s book. Not built in this slice.';
+    body.append(el('p','','It will hold offers to buy and offers to sell, matched by the contract and held in escrow, the fee burned, and a public price history for every item.'),
+      el('p','','Nothing is listed: there is no chain and no other shard here, and no price is invented.'));}
+  else if(id==='door'){$('ovSub').textContent='4 of 20 delvers in the Gatehouse. Stand on the plate: three seconds and the shard forms, and the door seals behind it.';
+    const kit=el('ul','kit');[G.player].concat(G.allies).forEach(d=>{const li=el('li');li.append(el('div','ico'),el('span','nm',d.name),el('span','stamp keep',onPlate(d)?'On the plate':'Ready'));li.firstChild.append(iconEl(S.delver[d.skin][0].c,1.5));kit.append(li);});
+    body.append(kit);
+    if(fettered.length)note.textContent='Fettered: '+fettered.map(x=>x.d.name).join(', ')+'. Nobody enters after the seal.';
+    else{note.textContent='Nothing fettered: the door will not open. Nothing enters with nothing at stake.';}
+    note.className=fettered.length?'':'warn';}
+  else if(id==='roll'){$('ovSub').textContent='Who died here, wearing what. The one place nobody is forgotten.';
+    if(!ROLL.length)body.append(el('p','','No one yet. The first death is written here, by name.'));
+    else{const ul=el('ul','roll');for(const r of ROLL){const li=el('li'),who=el('span','who');who.append(el('b','','You'),document.createTextNode(' fell to '+r.by+' · seed '+hex(r.seed)+' · tick '+r.tick.toLocaleString('en-US')));
+        const f=el('ul','fates');let p=0;r.items.forEach((x,i)=>{if(x.pool)p++;const row=fateRow(S.icon[x.item.d.id],x.item.d.name,x.pool?'To the pool':'Burned',x.pool?'pool':'burn',i);f.append(row);});
+        li.append(who,f,el('span','meta',(r.items.length-p)+' burned, '+p+' to the pool'+(r.carried?', '+r.carried+' carried and left where they fell':'')+'. The seed stands in for the replay.'));ul.append(li);}
+      body.append(ul);}}
+  else if(id==='mint'){$('ovSub').textContent='Burn token and ETH for a tier-I set.';
+    const row=el('div','mintrow');for(const id2 of ['wand1','robe1','ring1']){const f=el('figure'),c=el('div','ico');c.append(iconEl(S.icon[id2],2));f.append(c,el('figcaption','',ITEMS[id2].name));row.append(f);}
+    body.append(row,el('p','','120 token + 0.002 ETH a set, placeholder amounts. The token is burned for good; the ETH side funds what bosses drop.'));
+    btn.hidden=false;btn.textContent='Mint a tier-I set';btn.onclick=function(){mintSet(false);openPanel('mint');note.textContent='Minted. Empty slots are fettered with it; the rest waits in the strongbox.';};
+    note.textContent=vault.length+' spare piece'+(vault.length===1?'':'s')+' in the strongbox.';note.className='';}
+  ov.hidden=false;
+}
+function closePanel(){panel=null;const ov=$('overlay');ov.hidden=true;$('ovBtn').hidden=false;$('ovClose').hidden=true;$('ovNote').className='';canvas.focus();}
+function objectRect(o){   /* screen rect of a Gatehouse thing and its prompt, in buffer pixels */
+  const cx=(o.tx+.5)*16-G.camx;let top,bot;
+  if(o.spr){const sp=o.spr==='brazier'?S.gate.brazier[0]:S.gate[o.spr];bot=(o.ty+1)*16-G.camy;top=bot-sp.height-20;}
+  else{top=G.door.y0*16-G.camy-20;bot=(G.door.y1+1)*16-G.camy;}
+  return {x0:cx-30,x1:cx+30,y0:top,y1:bot};}
 
 /* ---------- render ---------- */
 function circ(g,x,y,r){g.beginPath();g.arc(x,y,r,0,6.2832);g.fill();}
@@ -934,6 +1095,7 @@ function render(){
   for(const a of G.allies)if(!a.dead)dl.push([a.y,4,a]);
   if(!P.dead&&G.state!=='out')dl.push([P.y,4,P]);
   if(G.portal)dl.push([G.portal.y-8,5,G.portal]);
+  if(G.gate)for(const o of GATE_OBJECTS)if(o.spr)dl.push([(o.ty+1)*16-1,6,o]);
   dl.sort((a,b)=>a[0]-b[0]);
   for(const d of dl){const o=d[2],x=Math.round(o.x)-camx,y=Math.round(o.y)-camy;
     if(x<-40||y<-40||x>vw+40||y>vh+40)continue;
@@ -956,6 +1118,11 @@ function render(){
       shadow(g,x,y+3,5);
       g.drawImage(o.flash>0||o.dash>0?(left?fr.wf:fr.w):(left?fr.f:fr.c),x-(left?9:7),y-12);
       lights.push([x+(left?-6:7),y-3,(isP?G.st.light:58)+fl*Math.sin((t+o.skin*40)*.17)*2,'#f7c04a',1]);}
+    else if(d[1]===6){const sp=o.spr==='brazier'?S.gate.brazier[(t>>3)&1]:S.gate[o.spr],ox=(o.tx+.5)*16-camx,oy=(o.ty+1)*16-camy;
+      g.drawImage(sp,Math.round(ox-sp.width/2),oy-sp.height);
+      lights.push([ox,oy-sp.height/2,30,'#d9cfb4',0]);
+      if(o.spr==='brazier')lights.push([ox,oy-sp.height+3,54+fl*Math.sin(t*.2)*2,'#e8822e',1]);
+      if(o.spr==='banner')lights.push([ox,oy-8,22,'#5fd1b5',0]);}
     else{const pu=RM?.5:.5+.5*Math.sin(t*.09);
       ell(g,x,y,16,9,PAL.d);ell(g,x,y,12,7,PAL.t);ell(g,x,y,7+pu*2,4+pu,PAL.T);ell(g,x,y,3+pu,2,'#ffffff');
       for(let i=0;i<40;i++){const a=t*.05+i*.63,rr=5+(i%9)*1.7;
@@ -973,7 +1140,7 @@ function render(){
   g.globalCompositeOperation='lighter';
   for(const L of lights){if(!L[4])continue;const m=L[5]||1;g.fillStyle=L[3];g.globalAlpha=.032*m;circ(g,L[0],L[1],L[2]*.75);g.globalAlpha=.028*m;circ(g,L[0],L[1],L[2]*.4);}
   g.globalAlpha=1;g.globalCompositeOperation='source-over';
-  const d=dctx;d.globalCompositeOperation='source-over';d.clearRect(0,0,vw,vh);d.fillStyle=G.state==='dead'?'rgba(22,4,10,.9)':'rgba(6,4,12,.88)';d.fillRect(0,0,vw,vh);
+  const d=dctx;d.globalCompositeOperation='source-over';d.clearRect(0,0,vw,vh);d.fillStyle=G.state==='dead'?'rgba(22,4,10,.9)':G.gate?'rgba(6,4,12,.42)':'rgba(6,4,12,.88)';d.fillRect(0,0,vw,vh);
   d.globalCompositeOperation='destination-out';
   for(const L of lights){
     if(L[4]){d.fillStyle='rgba(0,0,0,.3)';circ(d,L[0],L[1],L[2]);d.fillStyle='rgba(0,0,0,.45)';circ(d,L[0],L[1],L[2]*.72);d.fillStyle='rgba(0,0,0,.7)';circ(d,L[0],L[1],L[2]*.44);}
@@ -988,7 +1155,8 @@ function render(){
     textC(g,'Recalling',x,y-32,PAL.T);bar(g,x-10,y-25,20,f,PAL.T);
     for(let i=0;i<24*f;i++){const a=-1.5708+i*.2618;g.fillStyle=i%2?PAL.T:'#ffffff';g.fillRect(Math.round(x+Math.cos(a)*14),Math.round(y-4+Math.sin(a)*9),1,1);}}
   if(G.portal&&G.state==='play')textC(g,'Extract',Math.round(G.portal.x)-camx,Math.round(G.portal.y)-camy-40,PAL.T);
-  if(G.door&&G.state==='play'){const D=G.door,cx=D.px+16-camx,cy=D.py+24-camy;
+  if(G.gate&&G.near&&!panel&&!(G.near.id==='door'&&G.door.t>0)){const o=G.near,r=objectRect(o),cx=(o.tx+.5)*16-camx;textC(g,o.name,cx,r.y0+2,PAL.b);textC(g,(touchMode||COARSE)?'tap':'space',cx,r.y0+10,PAL['6']);}
+  if(G.door&&(G.state==='play'||G.gate)){const D=G.door,cx=D.px+16-camx,cy=D.py+24-camy;
     if(D.state==='shut'&&D.t>0){textC(g,D.n+' of 4 ready',cx,D.py-camy-26,PAL.T);const f=D.t/DOOR_T;
       for(let i=0;i<24*f;i++){const a=-1.5708+i*.2618;g.fillStyle=i%2?PAL.T:'#ffffff';g.fillRect(Math.round(cx+Math.cos(a)*22),Math.round(cy+Math.sin(a)*28),1,1);}}
     else if(D.state==='sealed'&&Math.abs(P.x-D.x*16)<110&&Math.abs(P.y-cy-camy)<80)textC(g,'Sealed',D.x*16+8-camx,D.py-camy-10,PAL['6']);}
@@ -1000,7 +1168,7 @@ function render(){
     g.fillStyle=PAL.e;g.fillRect(x,16,Math.round(w*B.hp/B.max),3);g.fillStyle=PAL.R;g.fillRect(x,18,Math.round(w*B.hp/B.max),1);
     g.fillStyle=PAL.k;g.fillRect(x+Math.round(w/3),16,1,3);g.fillRect(x+Math.round(w*2/3),16,1,3);}
   if(G.portal&&G.state==='play'&&(t>>5)&1)textC(g,'Extract at the seal',vw/2,vh-14,PAL.T);
-  if(autoFire&&!touchMode)text(g,'Auto-fire',4,vh-9,PAL['6']);
+  if(autoFire&&!touchMode&&!G.gate)text(g,'Auto-fire',4,vh-9,PAL['6']);
   if(touch&&touch.bx!==undefined){g.fillStyle='rgba(217,207,180,.35)';g.fillRect(touch.bx-1,touch.by-1,3,3);g.fillStyle='rgba(95,209,181,.7)';g.fillRect(Math.round(touch.bx+touch.dx*10)-1,Math.round(touch.by+touch.dy*10)-1,3,3);}
   if(!P.dead&&P.hp<G.st.maxhp*.3&&G.state==='play'){g.fillStyle='rgba(194,42,58,'+(.1+.07*Math.sin(t*.2))+')';g.fillRect(0,0,vw,3);g.fillRect(0,vh-3,vw,3);g.fillRect(0,0,3,vh);g.fillRect(vw-3,0,3,vh);}
   if(G.flash>0&&!RM){g.fillStyle='rgba(255,241,168,'+(G.flash/20)+')';g.fillRect(0,0,vw,vh);}
@@ -1017,15 +1185,16 @@ function rebuildHud(){
       const dur=el('i','dur'),f=el('i');f.style.width=it.dur+'%';dur.append(f);body.append(dur);}
     else body.append(el('span','nm','Nothing wagered'),el('span','meta',SLOTS[i]));
     li.append(ic,body);wl.append(li);});
-  const sk=$('skills'),lk=G.state==='play'&&G.locked;sk.textContent='';sk.className='skills'+(lk?' locked':'');
+  const sk=$('skills'),lk=G.state!=='gate';sk.textContent='';sk.className='skills'+(lk?' locked':'');
   SKILLS.forEach((k,i)=>{const b=el('button',i===skillSel?'on':'');b.type='button';b.append(el('b','',(i+1)+' '+k.name),document.createTextNode(k.note));
     b.onclick=function(){if(i===skillSel&&G.state==='play')skillHit=true;else pickSkill(i);canvas.focus();};sk.append(b);});
-  $('skillNote').textContent=lk?'Locked in for this delve.':'One skill per delve. Choose it in the entry hall.';
-  const rb=$('recallBtn'),shut=G.boss.awake;rb.textContent=shut?'No recall at the Turnkey':'Hold R to recall';rb.classList.toggle('shut',shut);
+  $('skillNote').textContent=lk?'Locked in for this delve.':'One skill per delve. Choose it before the door seals.';
+  const rb=$('recallBtn'),shut=G.boss.awake||G.gate;rb.textContent=G.gate?'Nothing to recall from here':shut?'No recall at the Turnkey':'Hold R to recall';rb.classList.toggle('shut',shut);
   const bag=$('bag');bag.textContent='';
   for(let i=0;i<8;i++){const c=el('div');if(carried[i]){c.append(iconEl(S.icon[carried[i].d.id],2));c.title=carried[i].d.name+' (tier '+ROMAN[carried[i].d.tier]+')';}bag.append(c);}
   const lg=$('log');lg.textContent='';for(const s of G.log)lg.append(el('li','',s));
   $('poolNum').textContent=G.pool+(G.pool===1?' relic of the dead':' relics of the dead');
+  $('wagerNote').textContent=G.gate?'at risk once the door seals':'lost if you die';
   const pt=$('party');pt.textContent='';let alive=G.player.dead?0:1;
   for(const a of G.allies){const li=el('li'),nm=el('span',a.dead?'gone':'',a.name),m=el('div','meter'),f=el('i');
     if(!a.dead){alive++;f.style.width=Math.max(0,a.hp/a.max*100)+'%';a._bar=f;m.append(f);li.append(nm,m);}else li.append(nm,el('span','gone',a.gone?'recalled':'forgotten'));
@@ -1039,7 +1208,7 @@ function tickHud(){
   for(const a of G.allies)if(!a.dead&&a._bar)a._bar.style.width=Math.max(0,a.hp/a.max*100)+'%';
   $('skillFill').style.width=(P.scd>0?(1-P.scd/P.scdMax)*100:100)+'%';$('skillNum').textContent=P.scd>0?(P.scd/60).toFixed(1)+' s':'Space';
   $('recallBtn').classList.toggle('on',P.recall>0);
-  $('rec').textContent='seed '+hex(G.seed)+' · tick '+G.tick.toLocaleString('en-US')+' · 60 Hz · shard 1 of 1';
+  $('rec').textContent=(G.gate?'Gatehouse · next seed ':'seed ')+hex(G.seed)+' · tick '+G.tick.toLocaleString('en-US')+' · 60 Hz · shard 1 of 1';
 }
 
 /* ---------- sprite sheet ---------- */
@@ -1050,6 +1219,7 @@ function buildSheet(){
     wrap.append(h,sh);root.append(wrap);}
   row('Delvers, one class in four cloaks',[['You, the lamplighter',S.delver[0][0].c],['Walk frame',S.delver[0][1].c],['Vell',S.delver[1][0].c],['Odric',S.delver[2][0].c],['Tamsin',S.delver[3][0].c],['Hit flash',S.delver[0][0].w]]);
   row('The dungeon\'s own',[['The Forgotten',S.forgotten.c],['Shade',S.shade.c],['Gaoler',S.gaoler.c],['The Turnkey, 32 × 32',S.turnkey.c]]);
+  row('The Gatehouse and the boss door',[['Strongbox',S.gate.chest],['Fettering post',S.gate.pillar],['Ledger',S.gate.bookshelf],['The Roll',S.gate.banner],['The Mint',S.gate.brazier[0]],['',S.gate.brazier[1]],['The door',S.portcullis]]);
   row('Tiles and props',[['Flagstone',TILES.floor[0]],['Cracked',TILES.floor[3]],['Mossed',TILES.floor[4]],['Wall face',TILES.face[0]],['Wall top',TILES.top],['Torch',S.torch[0]],['',S.torch[1]],['',S.torch[2]],['Gravestone',S.grave],['Bag, tier I',S.bag[1]],['Tier II',S.bag[2]],['Tier III',S.bag[3]],['Draught',S.flask]]);
   row('Projectiles: diamonds are yours, orbs are theirs',[['Bolt I',S.b.bolt1,6],['Bolt II',S.b.bolt2,6],['Bolt III',S.b.bolt3,6],['Other delvers',S.b.ally,6],['Forgotten',S.b.bone,6],['Shade',S.b.purple,6],['Gaoler',S.b.red,6],['Turnkey',S.b.orange,6],['Turnkey, heavy',S.b.big,6]]);
   const gear=[];for(const id in ITEMS)gear.push([ITEMS[id].name+' · '+ROMAN[ITEMS[id].tier],S.icon[id]]);
@@ -1066,12 +1236,14 @@ window.addEventListener('keydown',function(e){const k=e.key.toLowerCase();
   if((ae===canvas&&k.indexOf('arrow')===0)||(k===' '&&(ae===canvas||ae===document.body||!ae)))e.preventDefault();
   if(e.metaKey||e.ctrlKey||e.altKey)return;
   keys[k]=true;
-  if(!e.repeat){if(k==='f')autoFire=!autoFire;else if(k===' ')skillHit=true;else if(k==='1'||k==='2'||k==='3')pickSkill(+k-1);}
+  if(!e.repeat){if(k==='f')autoFire=!autoFire;else if(k===' ')skillHit=true;else if(k==='e')useHit=true;else if(k==='escape'&&panel)closePanel();else if(k==='1'||k==='2'||k==='3')pickSkill(+k-1);}
   started();});
 window.addEventListener('keyup',function(e){keys[e.key.toLowerCase()]=false;});
 window.addEventListener('blur',function(){for(const k in keys)keys[k]=false;mouseDown=false;});
 function setMouse(e){const r=canvas.getBoundingClientRect();mouse.bx=(e.clientX-r.left)/r.width*buf.width;mouse.by=(e.clientY-r.top)/r.height*buf.height;mouse.seen=true;}
 canvas.addEventListener('pointerdown',function(e){started();
+  if(G&&G.gate&&G.near&&!panel){const r=canvas.getBoundingClientRect(),bx=(e.clientX-r.left)/r.width*buf.width,by=(e.clientY-r.top)/r.height*buf.height,o=objectRect(G.near);
+    if(bx>=o.x0&&bx<=o.x1&&by>=o.y0&&by<=o.y1){if(e.pointerType==='touch')touchMode=true;openPanel(G.near.id);return;}}
   if(e.pointerType==='touch'){touchMode=true;const r=canvas.getBoundingClientRect();touch={id:e.pointerId,ox:e.clientX,oy:e.clientY,dx:0,dy:0,bx:Math.round((e.clientX-r.left)/r.width*buf.width),by:Math.round((e.clientY-r.top)/r.height*buf.height)};}
   else{touchMode=false;mouseDown=true;setMouse(e);}
   try{canvas.setPointerCapture(e.pointerId);}catch(_){}});
@@ -1094,14 +1266,15 @@ function frame(now){requestAnimationFrame(frame);if(!last)last=now;acc+=Math.min
   let n=0;while(acc>=16.667&&n<5){update();acc-=16.667;n++;}if(n===5)acc=0;
   render();if(hudDirty||G.tick-hudAt>=6){hudAt=G.tick;tickHud();}}
 function start(){
-  buildSprites();buildSheet();newRun(0x0B11E77E,true);resize();
-  if(window.matchMedia&&window.matchMedia('(pointer: coarse)').matches)$('hint').textContent='Drag to move · bolts aim themselves';
+  buildSprites();buildSheet();enterGate();resize();
   if(window.ResizeObserver)new ResizeObserver(resize).observe(stage);else window.addEventListener('resize',resize);
   window.__oub={get G(){return G;},rooms:function(){return rooms;},
     warp:function(i){const r=rooms[i],x=(r.cx+.5)*16-(i===5?70:0),y=(r.cy+.5)*16;G.player.x=x;G.player.y=y;G.cam.x=x;G.cam.y=y;for(const a of G.allies){a.x=x+a.ox;a.y=y+a.oy;}},
     plate:function(){const D=G.door,x=D.px+16,y=D.py+24;G.player.x=x;G.player.y=y;G.cam.x=x;G.cam.y=y;G.allies.forEach((a,i)=>{a.x=x+(i%2?-5:5);a.y=y+(i-1)*14;});},
     mapdump:function(){return {MW:MW,MH:MH,map:Array.from(map),rooms:JSON.stringify(rooms),px:mapCv.getContext('2d').getImageData(0,0,mapCv.width,mapCv.height).data.reduce(function(h,v){return (h*31+v)>>>0;},7)};},
-    hurt:function(n){hurtDelver(G.player,n);},boss:function(hp){G.boss.hp=hp;},skill:function(i){pickSkill(i);skillHit=true;},give:function(id){carried.push(mk(id,G.rng));hudDirty=true;}};
+    hurt:function(n){hurtDelver(G.player,n);},boss:function(hp){G.boss.hp=hp;},skill:function(i){pickSkill(i);skillHit=true;},give:function(id){carried.push(mk(id,G.rng));hudDirty=true;},
+    delve:function(){if(G.state==='gate')startDelve();},goto:function(id){const o=GATE_OBJECTS.find(x=>x.id===id),x=o.spr?(o.tx+.5)*16:21.5*16,y=o.spr?(o.ty+.5)*16+(o.ty<7?20:-20):7.5*16;G.player.x=x;G.player.y=y;G.allies.forEach((a,i)=>{a.x=Math.max(28,x-20-i*12);a.y=y+8;});},
+    use:function(){useHit=true;},close:closePanel,back:function(){$('ovBtn').click();},roll:function(){return ROLL;},vault:function(){return vault;},wager:function(){return wager;}};
   requestAnimationFrame(frame);
 }
 if(window.claude&&window.claude.hot&&window.claude.hot.ready)window.claude.hot.ready(start);else start();
