@@ -195,6 +195,7 @@ button:focus-visible{outline:2px solid var(--verdigris);outline-offset:3px}
           <li>The boss is a piñata. It drops fresh gear plus what the dead put in the pool.</li>
           <li>One skill per delver, wagered and lost like any other piece.</li>
           <li>You may recall before the boss, never at him. The loot is for those who lock in.</li>
+          <li>The boss door is sealed. Stand on the plate for three seconds: those on it go through and the door seals behind them; anyone else recalls with their wager. The Turnkey is measured to the head-count.</li>
         </ul>
       </div>
       <div>
@@ -339,6 +340,9 @@ const TURNKEY_L=[
 "....kkRRkkRRkkRR",
 ".....kkk.kkk.kkk"];
 const TURNKEY=TURNKEY_L.map(r=>r+r.split('').reverse().join(''));
+/* the boss door: the art bank's portcullis, a mirrored half */
+const PORTCULLIS_L=["..kkkkkk","..kmkmkm","..kmkmkm","..kiiiii","..kmkmkm","..kmkmkm","..kmkmkm","..kiiiii","..kmkmkm","..kmkmkm","..kmkmkm","..kiiiii","..kmkmkm","..kmkmkm","...m.m.m","........"];
+const PORTCULLIS=PORTCULLIS_L.map(r=>r+r.split('').reverse().join(''));
 const TORCH=[
 ["..y...",".yYy..",".yYYy.","oyYYyo","oyYyoo",".ooyo.","..ww..","..ww.."],
 ["...y..","..yYy.",".yYYy.","oyYYyo","ooyYyo",".oyoo.","..ww..","..ww.."],
@@ -528,7 +532,7 @@ function buildSprites(){
   S.forgotten=bundle(spr(FORGOTTEN));S.shade=bundle(spr(SHADE));S.gaoler=bundle(spr(GAOLER));S.turnkey=bundle(spr(TURNKEY));
   S.torch=TORCH.map(t=>spr(t));
   S.bag=[null,spr(BAG),spr(BAG,{W:'p',w:'v',l:'P',n:'#'}),spr(BAG,{W:'G',w:'g',l:'Y',n:'#'})];
-  S.grave=spr(GRAVE);S.bone=spr(BONE,{B:'n',b:'5'});S.skull=spr(SKULL,{B:'n',b:'5'});S.flask=spr(FLASK);
+  S.grave=spr(GRAVE);S.portcullis=spr(PORTCULLIS);S.bone=spr(BONE,{B:'n',b:'5'});S.skull=spr(SKULL,{B:'n',b:'5'});S.flask=spr(FLASK);
   S.b={bolt1:spr(DIA5,{a:'t',A:'T'}),bolt2:spr(DIA5,{a:'T',A:'#'}),bolt3:spr(DIA7,{a:'t',A:'T'}),ally:spr(DIA5,{a:'d',A:'t'}),
     bone:spr(ORB5,{a:'n',A:'B'}),purple:spr(ORB5,{a:'p',A:'P'}),red:spr(ORB5,{a:'e',A:'y'}),orange:spr(ORB5,{a:'o',A:'Y'}),big:spr(ORB7,{a:'r',A:'o'})};
   S.bcol={bolt1:'#5fd1b5',bolt2:'#5fd1b5',bolt3:'#5fd1b5',ally:'#2f8f83',bone:'#d9cfb4',purple:'#a678e0',red:'#c22a3a',orange:'#e8822e',big:'#e8822e'};
@@ -556,7 +560,7 @@ function genTop(r){const c=cv(16,16),g=c.getContext('2d');g.fillStyle='#110f19';
 /* ---------- map ---------- */
 let MW=128,MH=60,map,rooms,mapCv,torches;
 function at(x,y){return (x<0||y<0||x>=MW||y>=MH)?0:map[y*MW+x];}
-function solid(px,py){return at(px>>4,py>>4)!==1;}
+function solid(px,py){const tx=px>>4,ty=py>>4;if(G&&G.door&&!G.door.open&&tx===G.door.x&&ty>=G.door.y0&&ty<=G.door.y1)return true;return at(tx,ty)!==1;}
 function genMap(rng){
   map=new Uint8Array(MW*MH);rooms=[];
   const sizes=[[9,7],[11,9],[13,9],[11,11],[13,9],[21,15]];
@@ -623,6 +627,12 @@ const NAMES=['Vell','Odric','Tamsin'];
    Recall is the way out that pays nothing, and there is none once the Turnkey wakes. */
 const SKILLS=[{name:'Slip',cd:150,note:'dash through bolts'},{name:'Mend',cd:540,note:'heal all nearby'},{name:'Sunder',cd:360,note:'a heavy strike'}];
 const RECALL=180;
+/* The sealed boss door (SPEC §2): a portcullis across the corridor two tiles before the Turnkey's chamber, and a
+   ready plate before it. The clock runs while the player stands on the plate (the one human carries it; in a
+   shard any delver would), three seconds like recall. When it fires the door opens for those on the plate, any
+   ally not on it recalls - wager kept, nothing taken - and the door seals for good once the player is through.
+   The Turnkey's health is measured to the head-count that went through: hp = 3600 x (0.4 + 0.15 n), n of 4. */
+const DOOR_T=180,DOOR_SCALE=n=>.4+.15*n;
 let skillSel=0,skillHit=false;
 function mk(id,rng){return {d:ITEMS[id],dur:70+((rng()*30)|0)};}
 function stats(){const w=wager[0]?wager[0].d.tier:0,a=wager[1]?wager[1].d.tier:0,r=wager[2]?wager[2].d.tier:0;
@@ -635,8 +645,10 @@ function newRun(seed,fresh){
   if(!wager[4]||wager[4].d.skill!==skillSel)wager[4]={d:ITEMS[SKILLIDS[skillSel]],dur:90};   /* no rng: the seed's dungeon must not move */
   carried=[];genMap(rng);
   const r0=rooms[0],sx=(r0.cx+.5)*16,sy=(r0.cy+.5)*16;
+  const r4=rooms[4],r5=rooms[5],dcol=r5.x-2;   /* the corridor's only tiles at that column: rows r4.cy-1..r4.cy+1 */
+  const door={x:dcol,y0:r4.cy-1,y1:r4.cy+1,px:(dcol-2)*16,py:(r4.cy-1)*16,pw:32,ph:48,open:false,state:'shut',t:0,n:0,through:0,hinted:false};
   G={seed:seed,rng:rng,tick:0,state:'play',bullets:[],bags:[],parts:[],texts:[],graves:[],enemies:[],allies:[],log:[],pool:0,
-     shake:0,flash:0,locked:false,nag:0,portal:null,portalAt:0,cam:{x:sx,y:sy},camx:0,camy:0,st:stats(),rolls:null,deadAt:0,full:0};
+     shake:0,flash:0,locked:false,nag:0,portal:null,portalAt:0,cam:{x:sx,y:sy},camx:0,camy:0,st:stats(),rolls:null,deadAt:0,full:0,door:door};
   G.player={x:sx,y:sy,hw:4,hh:3,hp:G.st.maxhp,face:1,cd:0,flash:0,moving:false,skin:0,dead:false,name:'You',scd:0,scdMax:1,dash:0,ddx:0,ddy:0,recall:0,rlock:0};
   skillHit=false;
   const off=[[-16,-10],[14,-12],[-4,16]];
@@ -697,6 +709,24 @@ function updatePlayer(P){
     else if(G.tick-G.full>90){G.full=G.tick;addText(P.x,P.y-22,'Pack full',PAL['6'],50);}}
   if(G.portal){const dx=G.portal.x-P.x,dy=G.portal.y-P.y;if(dx*dx+dy*dy<120)extract();}
 }
+function onPlate(o){const D=G.door;return o.x>=D.px&&o.x<D.px+D.pw&&o.y>=D.py&&o.y<D.py+D.ph;}
+function recallAlly(a){a.dead=true;a.gone=true;puff(a.x,a.y-6,22,[PAL.T,'#ffffff'],1.4,30);addText(a.x,a.y-30,a.name+' recalls',PAL.T,110);
+  log(a.name+' was not on the plate and recalls: wager kept, nothing taken.');hudDirty=true;}
+function updateDoor(){
+  const D=G.door,P=G.player;if(P.dead)return;
+  if(D.state==='shut'){
+    const cx=D.px+16,cy=D.py+24,dd=Math.hypot(P.x-cx,P.y-cy);
+    if(!D.hinted&&dd<96){D.hinted=true;addText(cx,D.py-14,'Stand on the plate',PAL.T,110);log('A sealed door. Whoever stands on the plate when it fires goes through; the rest recall.');}
+    if(onPlate(P)){D.n=1;for(const a of G.allies)if(!a.dead&&onPlate(a))D.n++;
+      if(++D.t>=DOOR_T){D.state='open';D.open=true;D.t=0;let n=1;
+        for(const a of G.allies){if(a.dead)continue;if(onPlate(a)){a.through=true;n++;}else recallAlly(a);}
+        D.through=n;G.boss.max=G.boss.hp=Math.round(3600*DOOR_SCALE(n));G.shake=Math.max(G.shake,3);
+        addText((D.x+.5)*16,D.py-14,'The door opens',PAL.T,110);log('The door opens for '+n+'. The Turnkey is measured to '+n+'.');hudDirty=true;}}
+    else{D.t=0;D.n=0;}}
+  else if(D.state==='open'&&P.x>=(D.x+1)*16){D.state='sealed';D.open=false;
+    for(const a of G.allies){if(a.dead||a.x>=(D.x+1)*16)continue;let x=P.x+a.ox*.5,y=P.y+a.oy*.5;if(!boxFree(x,y,a.hw,a.hh)){x=P.x;y=P.y;}a.x=x;a.y=y;}
+    log('The door seals behind you. No one enters now.');}
+}
 function pickSkill(i){
   if(G.state==='play'&&G.locked){if(i!==skillSel&&G.tick-G.nag>50){G.nag=G.tick;addText(G.player.x,G.player.y-32,'Locked in',PAL['6'],50);}return;}
   skillSel=i;if(G.state==='play')wager[4]={d:ITEMS[SKILLIDS[i]],dur:wager[4]?wager[4].dur:90};hudDirty=true;
@@ -719,13 +749,15 @@ function updateAlly(a){
   const far=!P.dead&&Math.hypot(P.x-a.x,P.y-a.y)>190;
   if(!far){for(const e of G.enemies){if(e.dead||!e.awake)continue;const d=(e.x-a.x)*(e.x-a.x)+(e.y-a.y)*(e.y-a.y);if(d<bd){bd=d;tgt=e;}}
     if(!B.dead&&B.awake){const d=(B.x-a.x)*(B.x-a.x)+(B.y-a.y)*(B.y-a.y);if(d<210*210&&(!tgt||d<bd)){tgt=B;bd=d;}}}
-  let mx=0,my=0;
+  let mx=0,my=0;const D=G.door,gather=!P.dead&&D.state==='shut'&&onPlate(P);   /* the plate comes first: stand on it, shoot from it */
   if(tgt){const dx=tgt.x-a.x,dy=tgt.y-a.y,d=Math.sqrt(bd)||1,keep=tgt===B?92:70;
-    if(d>keep+15){mx+=dx/d;my+=dy/d;}else if(d<keep-15){mx-=dx/d;my-=dy/d;}
-    mx+=-dy/d*a.dir*.7;my+=dx/d*a.dir*.7;a.face=dx<0?-1:1;a.cd--;
+    if(!gather){if(d>keep+15){mx+=dx/d;my+=dy/d;}else if(d<keep-15){mx-=dx/d;my-=dy/d;}
+      mx+=-dy/d*a.dir*.7;my+=dx/d*a.dir*.7;}
+    a.face=dx<0?-1:1;a.cd--;
     if(a.cd<=0){a.cd=18+G.rng()*8;shoot(a.x,a.y-5,Math.atan2(tgt.y-(tgt===B?12:6)-(a.y-5),dx)+(G.rng()-.5)*.16,160,'ally',a.dmg,0,46);}}
-  else if(!P.dead){const dx=P.x+a.ox-a.x,dy=P.y+a.oy-a.y,d=Math.hypot(dx,dy);
-    if(d>320){a.x=P.x;a.y=P.y;}else if(d>9){mx=dx/d;my=dy/d;a.face=dx<0?-1:1;}}
+  if(!P.dead&&(gather||!tgt)){
+    const tx=gather?D.px+16+(a.skin%2?-5:5):P.x+a.ox,ty=gather?D.py+24+(a.skin-2)*14:P.y+a.oy,dx=tx-a.x,dy=ty-a.y,d=Math.hypot(dx,dy);
+    if(d>320){a.x=P.x;a.y=P.y;}else if(d>(gather?2:9)){mx=dx/d;my=dy/d;if(!tgt)a.face=dx<0?-1:1;}}
   for(const b of G.bullets){if(b.from===0)continue;const dx=a.x-b.x,dy=a.y-5-b.y,d2=dx*dx+dy*dy;
     if(d2<676){const d=Math.sqrt(d2)||1;mx+=dx/d*1.6*a.skill;my+=dy/d*1.6*a.skill;}}
   const ml=Math.hypot(mx,my);a.moving=ml>.12;if(a.moving)tryMove(a,mx/ml*58/60,my/ml*58/60);
@@ -817,7 +849,7 @@ function updateBullets(){
 }
 function update(){
   G.tick++;const P=G.player;
-  if(G.state==='play')updatePlayer(P);
+  if(G.state==='play'){updatePlayer(P);if(G.state==='play')updateDoor();}
   if(G.state!=='out'){
     for(const a of G.allies)if(!a.dead)updateAlly(a);
     for(const e of G.enemies)updateEnemy(e);
@@ -884,6 +916,13 @@ function render(){
   g.globalCompositeOperation='source-over';g.globalAlpha=1;g.fillStyle=PAL.k;g.fillRect(0,0,vw,vh);
   g.drawImage(mapCv,-camx,-camy);
   const lights=[],fl=RM?0:1;
+  if(G.door){const D=G.door,px=D.px-camx,py=D.py-camy;
+    if(px>-80&&py>-80&&px<vw+80&&py<vh+80){
+      g.fillStyle=D.state==='shut'?PAL.d:PAL['3'];g.fillRect(px,py,32,1);g.fillRect(px,py+47,32,1);g.fillRect(px,py,1,48);g.fillRect(px+31,py,1,48);
+      for(let i=0;i<6;i++)for(let j=0;j<3;j++)g.fillRect(px+4+j*11,py+6+i*7,2,1);
+      if(D.state==='shut'&&D.t>0){g.fillStyle='rgba(95,209,181,.22)';const h=Math.round(46*D.t/DOOR_T);g.fillRect(px+1,py+47-h,30,h);lights.push([px+16,py+24,30+D.t/6,'#5fd1b5',1]);}
+      for(let ty=D.y0;ty<=D.y1;ty++){const x=D.x*16-camx,y=ty*16-camy;
+        if(D.open)g.drawImage(S.portcullis,0,0,16,4,x,y,16,4);else g.drawImage(S.portcullis,x,y);}}}
   for(const T of torches){const x=T.x-camx,y=T.y-camy;if(x<-90||y<-90||x>vw+90||y>vh+90)continue;
     g.drawImage(S.torch[((t+T.ph)>>3)%3],x-3,y-6);
     lights.push([x,y,64+fl*(Math.sin((t+T.ph*7)*.21)*2.5+(((t+T.ph)>>2)%2)*2),'#e8822e',1]);}
@@ -949,6 +988,10 @@ function render(){
     textC(g,'Recalling',x,y-32,PAL.T);bar(g,x-10,y-25,20,f,PAL.T);
     for(let i=0;i<24*f;i++){const a=-1.5708+i*.2618;g.fillStyle=i%2?PAL.T:'#ffffff';g.fillRect(Math.round(x+Math.cos(a)*14),Math.round(y-4+Math.sin(a)*9),1,1);}}
   if(G.portal&&G.state==='play')textC(g,'Extract',Math.round(G.portal.x)-camx,Math.round(G.portal.y)-camy-40,PAL.T);
+  if(G.door&&G.state==='play'){const D=G.door,cx=D.px+16-camx,cy=D.py+24-camy;
+    if(D.state==='shut'&&D.t>0){textC(g,D.n+' of 4 ready',cx,D.py-camy-26,PAL.T);const f=D.t/DOOR_T;
+      for(let i=0;i<24*f;i++){const a=-1.5708+i*.2618;g.fillStyle=i%2?PAL.T:'#ffffff';g.fillRect(Math.round(cx+Math.cos(a)*22),Math.round(cy+Math.sin(a)*28),1,1);}}
+    else if(D.state==='sealed'&&Math.abs(P.x-D.x*16)<110&&Math.abs(P.y-cy-camy)<80)textC(g,'Sealed',D.x*16+8-camx,D.py-camy-10,PAL['6']);}
   for(const tx of G.texts){g.globalAlpha=Math.min(1,tx.life/12);const s=String(tx.s);text(g,s,Math.round(tx.x)-camx-(s.length>4?textW(s)/2:0),Math.round(tx.y)-camy,tx.col,tx.sc);}
   g.globalAlpha=1;
   const B=G.boss;
@@ -985,7 +1028,7 @@ function rebuildHud(){
   $('poolNum').textContent=G.pool+(G.pool===1?' relic of the dead':' relics of the dead');
   const pt=$('party');pt.textContent='';let alive=G.player.dead?0:1;
   for(const a of G.allies){const li=el('li'),nm=el('span',a.dead?'gone':'',a.name),m=el('div','meter'),f=el('i');
-    if(!a.dead){alive++;f.style.width=Math.max(0,a.hp/a.max*100)+'%';a._bar=f;m.append(f);li.append(nm,m);}else li.append(nm,el('span','gone','forgotten'));
+    if(!a.dead){alive++;f.style.width=Math.max(0,a.hp/a.max*100)+'%';a._bar=f;m.append(f);li.append(nm,m);}else li.append(nm,el('span','gone',a.gone?'recalled':'forgotten'));
     pt.append(li);}
   $('partyNum').textContent=alive+' of 20';
   hudDirty=false;
@@ -1056,6 +1099,8 @@ function start(){
   if(window.ResizeObserver)new ResizeObserver(resize).observe(stage);else window.addEventListener('resize',resize);
   window.__oub={get G(){return G;},rooms:function(){return rooms;},
     warp:function(i){const r=rooms[i],x=(r.cx+.5)*16-(i===5?70:0),y=(r.cy+.5)*16;G.player.x=x;G.player.y=y;G.cam.x=x;G.cam.y=y;for(const a of G.allies){a.x=x+a.ox;a.y=y+a.oy;}},
+    plate:function(){const D=G.door,x=D.px+16,y=D.py+24;G.player.x=x;G.player.y=y;G.cam.x=x;G.cam.y=y;G.allies.forEach((a,i)=>{a.x=x+(i%2?-5:5);a.y=y+(i-1)*14;});},
+    mapdump:function(){return {MW:MW,MH:MH,map:Array.from(map),rooms:JSON.stringify(rooms),px:mapCv.getContext('2d').getImageData(0,0,mapCv.width,mapCv.height).data.reduce(function(h,v){return (h*31+v)>>>0;},7)};},
     hurt:function(n){hurtDelver(G.player,n);},boss:function(hp){G.boss.hp=hp;},skill:function(i){pickSkill(i);skillHit=true;},give:function(id){carried.push(mk(id,G.rng));hudDirty=true;}};
   requestAnimationFrame(frame);
 }

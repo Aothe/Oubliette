@@ -45,7 +45,7 @@ const out = path.join(__dirname, 'out');
   await page.waitForTimeout(1000);
   await shot(page, '01-start.png');
 
-  // window.__oub is the page's debug hook: G (state), warp(room), hurt(n), boss(hp), skill(i), give(id).
+  // window.__oub is the page's debug hook: G (state), warp(room), plate(), hurt(n), boss(hp), skill(i), give(id), mapdump().
   const stage = await page.$('#stage');
   const box = await stage.boundingBox();
   const heal = () => page.evaluate(() => { const G = window.__oub.G; G.player.hp = G.st.maxhp; });
@@ -55,27 +55,47 @@ const out = path.join(__dirname, 'out');
   await page.waitForTimeout(3500);
   await shot(stage, '02-combat.png');
 
+  // the sealed boss door: the party on the ready plate, the clock running; then through, and the door seals
+  await page.keyboard.press('f');                       // auto-fire off
+  await page.evaluate(() => window.__oub.plate());
+  await heal();
+  await page.waitForTimeout(1900);
+  await shot(stage, '03-plate.png');
+  await page.waitForTimeout(1500);
+  const opened = await page.evaluate(() => window.__oub.G.door.state);
+  if (opened !== 'open') errors.push('door: expected open after the plate clock, got ' + opened);
+  await page.keyboard.down('d');
+  await page.waitForTimeout(650);
+  await page.keyboard.up('d');
+  await page.waitForTimeout(400);
+  const sealed = await page.evaluate(() => [window.__oub.G.door.state, window.__oub.G.door.through, window.__oub.G.boss.max, window.__oub.G.boss.awake]);
+  if (sealed[0] !== 'sealed') errors.push('door: expected sealed after crossing, got ' + sealed[0]);
+  if (sealed[3]) errors.push('door: the Turnkey woke before the chamber');
+  console.log('door: ' + sealed[1] + ' of 4 went through, the Turnkey measured to ' + sealed[2]);
+  await shot(stage, '04-door-sealed.png');
+
   await page.evaluate(() => window.__oub.warp(5));
   await heal();
   await page.mouse.move(box.x + box.width * 0.75, box.y + box.height * 0.5);
+  await page.keyboard.press('f');                       // auto-fire on
   await page.waitForTimeout(5000);
   await heal();
-  await shot(stage, '03-boss-phase1.png');
+  await shot(stage, '05-boss-phase1.png');
   await page.evaluate(() => window.__oub.boss(1100));
   await page.waitForTimeout(3000);
   await heal();
-  await shot(stage, '04-boss-phase3.png');
+  await shot(stage, '06-boss-phase3.png');
   await page.evaluate(() => window.__oub.boss(5));
   await page.waitForTimeout(1500);
-  await shot(stage, '05-pinata.png');
+  await shot(stage, '07-pinata.png');
   await heal();
   await page.waitForTimeout(1800);
-  await shot(stage, '06-seal.png');
+  await shot(stage, '08-seal.png');
 
   await page.evaluate(() => window.__oub.hurt(9999));
   await page.waitForTimeout(3400);
-  await shot(page, '07-death.png');
-  await page.screenshot({ path: path.join(out, '08-full-page.png'), fullPage: true });
+  await shot(page, '09-death.png');
+  await page.screenshot({ path: path.join(out, '10-full-page.png'), fullPage: true });
 
   // skills and the recall, on a fresh run: give() puts loot in the pack so the panel has rows
   const rp = await browser.newPage({ viewport: { width: 1280, height: 860 } });
@@ -87,24 +107,24 @@ const out = path.join(__dirname, 'out');
   await rp.mouse.move(rbox.x + rbox.width * 0.8, rbox.y + rbox.height * 0.45);
   await rp.evaluate(() => window.__oub.skill(2));        // Sunder
   await rp.waitForTimeout(160);
-  await shot(rstage, '10-skill-sunder.png');
+  await shot(rstage, '11-skill-sunder.png');
   await rp.evaluate(() => { window.__oub.G.player.scd = 0; window.__oub.skill(1); });   // Mend
   await rp.waitForTimeout(200);
-  await shot(rstage, '11-skill-mend.png');
+  await shot(rstage, '12-skill-mend.png');
   await rp.evaluate(() => { window.__oub.give('wand2'); window.__oub.give('ring1'); });
   await rp.keyboard.down('r');
   await rp.waitForTimeout(1700);
-  await shot(rstage, '12-recalling.png');
+  await shot(rstage, '13-recalling.png');
   await rp.waitForTimeout(2000);
   await rp.keyboard.up('r');
   await rp.waitForTimeout(1200);
-  await shot(rp, '13-recalled.png');
+  await shot(rp, '14-recalled.png');
 
   const phone = await browser.newPage({ viewport: { width: 390, height: 800 }, deviceScaleFactor: 2 });
   phone.on('pageerror', e => errors.push('phone: ' + e.message));
   await phone.goto(page_url, { waitUntil: 'networkidle' });
   await phone.waitForTimeout(1000);
-  await shot(phone, '09-phone.png');
+  await shot(phone, '15-phone.png');
   const wide = await phone.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
   if (wide > 0) errors.push('phone: page scrolls sideways by ' + wide + 'px');
 

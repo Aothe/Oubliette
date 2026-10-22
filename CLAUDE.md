@@ -22,10 +22,14 @@ not play-to-earn: permadeath is the sink the genre never had.
 - `proto/visual/` is the visual slice (2026-10-02): one self-contained `index.html`, no build, no
   dependencies, no image files — every sprite is a letter grid in the source, coloured from one
   35-entry palette and drawn at runtime. Placeholder art and invented names (class, boss, items);
-  it decides nothing (SPEC §4, §5) and is not `game/`. It carries the operator's two additions
+  it decides nothing (SPEC §4, §5) and is not `game/`. It carries the operator's additions
   (SPEC §2): one skill per delver, a wagered item chosen in the entry hall and then locked
-  (Slip / Mend / Sunder, Space), and a three-second recall (R) that saves the wager but not the
-  loot and is shut once the boss wakes. Open the file in a browser;
+  (Slip / Mend / Sunder, Space); a three-second recall (R) that saves the wager but not the
+  loot and is shut once the boss wakes; and the sealed boss door (2026-10-22): a portcullis two
+  tiles before the Turnkey with a ready plate — three seconds on it and the door opens for those
+  on it, any ally off it recalls with their wager, the door seals behind the party, and the
+  Turnkey's health is measured to the head-count (hp × (0.4 + 0.15 n)). The door is never in the
+  map array, so a seed's dungeon does not move. Open the file in a browser;
   `node proto/visual/shots.cjs` screenshots each game state into `proto/visual/out/` (gitignored).
 - `art/` is the art bank (2026-10-02): every sprite as data — `bank.js` (the palette, the loader,
   the tile generator), `creatures.js`, `items.js`, `world.js` — and `index.html`, a gallery that
