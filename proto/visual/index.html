@@ -595,7 +595,7 @@ function genTop(r){const c=cv(16,16),g=c.getContext('2d');g.fillStyle='#110f19';
 /* ---------- map ---------- */
 let MW=128,MH=60,map,rooms,mapCv,torches;
 function at(x,y){return (x<0||y<0||x>=MW||y>=MH)?0:map[y*MW+x];}
-function solid(px,py){const tx=px>>4,ty=py>>4;if(G&&G.door&&!G.door.open&&tx===G.door.x&&ty>=G.door.y0&&ty<=G.door.y1)return true;return at(tx,ty)!==1;}
+function solid(px,py,ignoreDoor){const tx=px>>4,ty=py>>4;if(!ignoreDoor&&G&&G.door&&!G.door.open&&tx===G.door.x&&ty>=G.door.y0&&ty<=G.door.y1)return true;return at(tx,ty)!==1;}
 function genMap(rng){
   map=new Uint8Array(MW*MH);rooms=[];
   const sizes=[[9,7],[11,9],[13,9],[11,11],[13,9],[21,15]];
@@ -704,8 +704,10 @@ function hex(n){return ('0000000'+(n>>>0).toString(16).toUpperCase()).slice(-8);
 function spawnEnemy(kind,x,y){const D=EDEF[kind];G.enemies.push({kind:kind,x:x,y:y,hw:4,hh:3,hp:D.hp,max:D.hp,hr:D.hr,awake:false,dead:false,cd:30+G.rng()*60,dir:G.rng()<.5?1:-1,flash:0,face:1,ph:G.rng()*100});}
 
 /* ---------- simulation ---------- */
-function boxFree(x,y,hw,hh){return !solid(x-hw,y-hh)&&!solid(x+hw,y-hh)&&!solid(x-hw,y+hh)&&!solid(x+hw,y+hh);}
-function tryMove(e,dx,dy){if(boxFree(e.x+dx,e.y,e.hw,e.hh))e.x+=dx;if(boxFree(e.x,e.y+dy,e.hw,e.hh))e.y+=dy;}
+function boxFree(x,y,hw,hh,ig){return !solid(x-hw,y-hh,ig)&&!solid(x+hw,y-hh,ig)&&!solid(x-hw,y+hh,ig)&&!solid(x+hw,y+hh,ig);}
+/* a body already in the doorway when the door is shut may walk out of it either way; the door is solid to everyone else */
+function inDoorway(e){const D=G&&G.door;return !!D&&!D.open&&e.x+e.hw>D.x*16&&e.x-e.hw<(D.x+1)*16&&e.y+e.hh>D.y0*16&&e.y-e.hh<(D.y1+1)*16;}
+function tryMove(e,dx,dy){const ig=inDoorway(e);if(boxFree(e.x+dx,e.y,e.hw,e.hh,ig))e.x+=dx;if(boxFree(e.x,e.y+dy,e.hw,e.hh,ig))e.y+=dy;}
 let SRC=null;   /* which enemy kind is firing, for the Roll of the Forgotten */
 function shoot(x,y,ang,spd,kind,dmg,from,life){G.bullets.push({x:x,y:y,vx:Math.cos(ang)*spd/60,vy:Math.sin(ang)*spd/60,k:kind,dmg:dmg,from:from,life:life||300,r:kind==='big'||kind==='bolt3'?3:2,src:from?SRC:null});}
 function addText(x,y,s,col,life,sc){G.texts.push({x:x,y:y,s:s,col:col,life:life||40,sc:sc||1});}
@@ -762,8 +764,8 @@ function updateDoor(){
         D.through=n;G.boss.max=G.boss.hp=Math.round(3600*DOOR_SCALE(n));G.shake=Math.max(G.shake,3);
         addText((D.x+.5)*16,D.py-14,'The door opens',PAL.T,110);log('The door opens for '+n+'. The Turnkey is measured to '+n+'.');hudDirty=true;}}
     else{D.t=0;D.n=0;}}
-  else if(D.state==='open'&&P.x>=(D.x+1)*16){D.state='sealed';D.open=false;
-    for(const a of G.allies){if(a.dead||a.x>=(D.x+1)*16)continue;let x=P.x+a.ox*.5,y=P.y+a.oy*.5;if(!boxFree(x,y,a.hw,a.hh)){x=P.x;y=P.y;}a.x=x;a.y=y;}
+  else if(D.state==='open'&&P.x-P.hw>(D.x+1)*16){D.state='sealed';D.open=false;   /* the whole body is past the door, not just its centre: sealing on the centre left the player inside the portcullis (operator, 2026-10-22) */
+    for(const a of G.allies){if(a.dead||a.x-a.hw>(D.x+1)*16)continue;let x=P.x+a.ox*.5,y=P.y+a.oy*.5;if(!boxFree(x,y,a.hw,a.hh)){x=P.x;y=P.y;}a.x=x;a.y=y;}
     log('The door seals behind you. No one enters now.');}
 }
 function pickSkill(i){
