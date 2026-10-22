@@ -60,6 +60,7 @@ play-to-earn.
 | The dead are named | The **Roll of the Forgotten** is public: who died, by chosen handle, wearing what, what came back as loot, how they died, and a link to the run's replay — the delver's persistence across death, the merchants' news feed, and the one place in the Oubliette where nobody is forgotten. *(Operator, 2026-10-20; the cause and the replay 2026-10-22.)* |
 | The wallet is the login | Entering the game is signing in with a wallet: a character on screen, chat and the three chain actions all need one. Watching needs none — the Gatehouse and a run's delayed feed may be open to anyone without a wallet. *(Operator, 2026-10-22.)* |
 | Equip is entry | One chain action, not two: the kit is at risk only inside a run, so "equipped but not in a run" never exists. Choose the kit and the skill, join the queue, and when the shard forms one entry transaction is relayed; the run's end unlocks it. `docs/chain.md` §4 is read that way, and the sealed door is a hub object because the hub is where the shard forms. *(Operator, 2026-10-20.)* |
+| Healing | **Potions, not regeneration.** A delver brought low heals by drinking a potion — a consumable (§3.5): minted by burning token, dropped by bosses, carried into the run and so at risk, burned on use, traded on the exchange — a merchant good and a sink, not a timer. *(Operator, 2026-10-22, after playing the slice: regeneration let a delver brought low by the boss "just run around and let it refill … maybe isn't the best mechanic"; of the two fixes named — potions, or much slower regeneration when low — "potions is the right direction".)* Open (§4): how a potion is got, how many are carried, how much it heals and how fast, and what natural regeneration remains, if any — to be tried in the slice. |
 
 ## 3. Mechanism
 
@@ -149,6 +150,10 @@ Two sinks on gear, one continuous (durability → repair kits → burned token) 
 (death). No upgrades: upgrades are a power source and an inflation vector; repair is a sink.
 The recycled fraction `s` is the single most important number in the economy and is the first
 output of the simulation, not a guess.
+
+Potions are how a delver heals (§2, 2026-10-22): a consumable like the repair kit — minted by
+burning token or dropped by a boss, carried into the run and so at risk, burned on use, traded on
+the exchange. Healing is a merchant good and a sink, not a timer.
 
 **Boss drops, distribution:** the recycled gear pool goes to finishers by a lottery weighted by
 contribution and level; the top five or ten share a dice roll for the one or two big items; the
