@@ -69,6 +69,20 @@ const out = path.join(__dirname, 'out');
   await page.waitForTimeout(3500);
   await shot(stage, '04-combat.png');
 
+  // a potion: back in the hall, hurt to under half, drink (Q); a third of max health comes back over two seconds
+  await page.keyboard.press('f');                       // auto-fire off
+  await page.evaluate(() => { window.__oub.warp(0); const G = window.__oub.G; G.player.hp = Math.round(G.st.maxhp * 0.45); });
+  const pouch0 = await page.evaluate(() => window.__oub.pouch());
+  await page.keyboard.press('q');
+  await page.waitForTimeout(900);
+  await shot(stage, '04b-potion.png');
+  await page.waitForTimeout(1500);
+  const drank = await page.evaluate(() => [window.__oub.pouch(), Math.round(window.__oub.G.player.hp), window.__oub.G.st.maxhp]);
+  if (drank[0] !== pouch0 - 1) errors.push('potion: expected the pouch to drop by one, got ' + pouch0 + ' -> ' + drank[0]);
+  if (drank[1] < Math.round(drank[2] * 0.45) + drank[2] / 3 - 2) errors.push('potion: expected about a third healed, hp ' + drank[1] + ' of ' + drank[2]);
+  console.log('potion: pouch ' + pouch0 + ' -> ' + drank[0] + ', hp ' + Math.round(drank[2] * 0.45) + ' -> ' + drank[1] + ' of ' + drank[2]);
+  await page.keyboard.press('f');                       // auto-fire back on
+
   // the sealed boss door: the party on the ready plate, the clock running; then through, and the door seals
   await page.keyboard.press('f');                       // auto-fire off
   await page.evaluate(() => window.__oub.plate());
@@ -114,9 +128,10 @@ const out = path.join(__dirname, 'out');
   // back to the Gatehouse: the death is on the Roll, the strongbox is empty, the Mint sells a set
   await page.evaluate(() => window.__oub.back());
   await page.waitForTimeout(300);
-  const roll = await page.evaluate(() => [window.__oub.G.state, window.__oub.roll().length, window.__oub.roll()[0] && window.__oub.roll()[0].by]);
+  const roll = await page.evaluate(() => [window.__oub.G.state, window.__oub.roll().length, window.__oub.roll()[0] && window.__oub.roll()[0].by, window.__oub.roll()[0] && window.__oub.roll()[0].pots]);
   if (roll[0] !== 'gate' || roll[1] !== 1) errors.push('roll: expected one death on the Roll in the Gatehouse, got ' + roll.join(','));
-  console.log('roll: You fell to ' + roll[2]);
+  if (roll[3] !== 1) errors.push('roll: expected 1 potion lost on the Roll row, got ' + roll[3]);
+  console.log('roll: You fell to ' + roll[2] + ', ' + roll[3] + ' potion lost');
   await page.evaluate(() => { window.__oub.goto('roll'); window.__oub.use(); });
   await page.waitForTimeout(300);
   await shot(stage, '13-roll.png');
@@ -124,6 +139,11 @@ const out = path.join(__dirname, 'out');
   await page.evaluate(() => { window.__oub.goto('mint'); window.__oub.use(); });
   await page.waitForTimeout(300);
   await shot(stage, '14-mint.png');
+  const stock0 = await page.evaluate(() => window.__oub.stock());
+  await page.click('text=Mint a potion');                 // the potion button on the Mint panel
+  await page.waitForTimeout(150);
+  const stock1 = await page.evaluate(() => window.__oub.stock());
+  if (stock1 !== stock0 + 1) errors.push('mint: expected one more potion in the strongbox, got ' + stock0 + ' -> ' + stock1);
   await page.evaluate(() => window.__oub.back());         // mint a set
   await page.waitForTimeout(200);
   const minted = await page.evaluate(() => window.__oub.wager().filter(Boolean).length);

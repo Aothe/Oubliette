@@ -164,6 +164,7 @@ button:focus-visible{outline:2px solid var(--verdigris);outline-offset:3px}
         <li><b>Space</b> your skill in the dungeon, or use a thing in the Gatehouse (<b>E</b> too)</li>
         <li><b>1 2 3</b> choose your skill before the door seals</li>
         <li><b>R</b> hold three seconds to recall; a hit breaks it; none at the boss</li>
+        <li><b>Q</b> drink a potion: a third of your health over two seconds; five in the pouch at most</li>
         <li><b>Touch</b> drag to move, bolts aim themselves</li>
       </ul>
     </div>
@@ -187,6 +188,7 @@ button:focus-visible{outline:2px solid var(--verdigris);outline-offset:3px}
       <section>
         <h2>Carried <span>yours if you extract</span></h2>
         <div class="bag" id="bag"></div>
+        <button type="button" class="hold" id="drinkBtn"><span id="drinkTxt">Q · drink · 0 / 5</span></button>
       </section>
       <section>
         <h2>Delvers <span id="partyNum">4 of 20</span></h2>
@@ -223,6 +225,7 @@ button:focus-visible{outline:2px solid var(--verdigris);outline-offset:3px}
           <li>You may recall before the boss, never at him. The loot is for those who lock in.</li>
           <li>The boss door is sealed. Stand on the plate for three seconds: those on it go through and the door seals behind them; anyone else recalls with their wager. The Turnkey is measured to the head-count.</li>
           <li>Every run starts in the Gatehouse: a strongbox, a fettering post, a ledger, the shard door, the Roll of the Forgotten and the mint. Nothing is at risk until the door seals, and nothing enters with nothing at stake.</li>
+          <li>Healing is potions, not regeneration: minted at the Mint or dropped by the Turnkey, carried into the run and at risk, drunk for a third of your health. Nothing heals for free in a fight.</li>
         </ul>
       </div>
       <div>
@@ -234,7 +237,8 @@ button:focus-visible{outline:2px solid var(--verdigris);outline-offset:3px}
           <li>Boss drops fall as bags to pick up. The spec's weighted lottery is not modelled.</li>
           <li>The three skills and their items: Slip (Moth Feather), Mend (Moss Poultice), Sunder (Breaker's Maul). Minting one is free here.</li>
           <li>Recall's numbers: three seconds, broken by any hit. It saves what you wagered and leaves what you carried, so only the seal pays.</li>
-          <li>The Gatehouse's shape and furniture, and the mint's prices (120 token + 0.002 ETH a set) are placeholders. The ledger lists nothing: there is no exchange here.</li>
+          <li>The Gatehouse's shape and furniture, and the mint's prices (120 token + 0.002 ETH a set, 15 token a potion) are placeholders. The ledger lists nothing: there is no exchange here.</li>
+          <li>The potion's numbers: five in the pouch, a third of your health over two seconds, one at a time; no regeneration for four seconds after a hit or a shot, half a point a second after. The Turnkey drops three; the Forgotten, Shades and Gaolers drop one now and then.</li>
         </ul>
       </div>
       <div>
@@ -650,6 +654,11 @@ function prerender(rng,gate){
 
 /* ---------- state ---------- */
 let G=null,wager=[null,null,null,null,null],carried=[];
+/* Potions (SPEC §2 "Healing"): the healing is a consumable, carried and at risk, never a timer. Five in the pouch
+   at most; a drink heals a third of max health over POT_T ticks, one at a time, POT_CD ticks between; no natural
+   regeneration within COMBAT_T ticks of a hit taken or a shot fired, REGEN_OUT a tick outside combat. */
+const POUCH=5,POT_T=120,POT_CD=45,COMBAT_T=240,REGEN_OUT=.5/60,POT_PRICE=15;
+let stock=0,drinkHit=false;   /* stock: potions in the strongbox; the pouch rides in G */
 const stage=$('stage'),canvas=$('game'),ctx=canvas.getContext('2d');
 const buf=cv(320,200),bx=buf.getContext('2d'),dk=cv(320,200),dctx=dk.getContext('2d');
 let zoom=2;
@@ -685,12 +694,14 @@ function newRun(seed){
   const r4=rooms[4],r5=rooms[5],dcol=r5.x-2;   /* the corridor's only tiles at that column: rows r4.cy-1..r4.cy+1 */
   const door={x:dcol,y0:r4.cy-1,y1:r4.cy+1,px:(dcol-2)*16,py:(r4.cy-1)*16,pw:32,ph:48,open:false,state:'shut',t:0,n:0,through:0,hinted:false};
   G={seed:seed,rng:rng,tick:0,state:'play',bullets:[],bags:[],parts:[],texts:[],graves:[],enemies:[],allies:[],log:[],pool:0,
-     shake:0,flash:0,locked:true,nag:0,portal:null,portalAt:0,cam:{x:sx,y:sy},camx:0,camy:0,st:stats(),rolls:null,deadAt:0,full:0,door:door,gate:false,near:null,hitBy:null};
-  G.player={x:sx,y:sy,hw:4,hh:3,hp:G.st.maxhp,face:1,cd:0,flash:0,moving:false,skin:0,dead:false,name:'You',scd:0,scdMax:1,dash:0,ddx:0,ddy:0,recall:0,rlock:0};
-  skillHit=false;
+     shake:0,flash:0,locked:true,nag:0,portal:null,portalAt:0,cam:{x:sx,y:sy},camx:0,camy:0,st:stats(),rolls:null,deadAt:0,full:0,door:door,gate:false,near:null,hitBy:null,
+     pouch:0,brought:0,drank:0};
+  G.pouch=Math.min(POUCH,stock);stock-=G.pouch;G.brought=G.pouch;   /* up to five come with you; the rest wait in the strongbox */
+  G.player={x:sx,y:sy,hw:4,hh:3,hp:G.st.maxhp,face:1,cd:0,flash:0,moving:false,skin:0,dead:false,name:'You',scd:0,scdMax:1,dash:0,ddx:0,ddy:0,recall:0,rlock:0,drink:0,dcd:0,lastHit:-999,lastShot:-999};
+  skillHit=false;drinkHit=false;
   const off=[[-16,-10],[14,-12],[-4,16]];
   for(let i=0;i<3;i++)G.allies.push({x:sx+off[i][0],y:sy+off[i][1],ox:off[i][0]*1.4,oy:off[i][1]*1.4,hw:4,hh:3,hp:80,max:80,face:1,cd:20+i*7,flash:0,
-    moving:false,skin:i+1,dead:false,name:NAMES[i],dir:i%2?1:-1,dmg:8,skill:.55+i*.2});
+    moving:false,skin:i+1,dead:false,name:NAMES[i],dir:i%2?1:-1,dmg:8,skill:.55+i*.2,pots:2,drink:0,dcd:0,lastHit:-999,lastShot:-999});
   const plan=[null,['forgotten',4],['forgotten',3,'shade',2],['gaoler',1,'forgotten',3,'shade',2],['gaoler',2,'shade',4]];
   for(let i=1;i<5;i++){const r=rooms[i],p=plan[i];
     for(let j=0;j<p.length;j+=2)for(let n=0;n<p[j+1];n++)spawnEnemy(p[j],(r.x+1.5+rng()*(r.w-3))*16,(r.y+1.5+rng()*(r.h-3))*16);}
@@ -736,19 +747,31 @@ function updatePlayer(P){
   else if(mouse.seen){mouse.wx=mouse.bx+G.camx;mouse.wy=mouse.by+G.camy;ax=mouse.wx;ay=mouse.wy;}
   if(ax!==null)P.face=ax<P.x?-1:1;else if(P.moving&&Math.abs(ix)>.2)P.face=ix<0?-1:1;
   if(skillHit){skillHit=false;if(P.scd<=0&&!rec&&P.dash<=0)useSkill(P,ix,iy,l,ax,ay);}
+  if(drinkHit){drinkHit=false;if(!rec)drink(P);}
   if(rec){if(++P.recall>=RECALL){recallOut();return;}}else P.recall=0;
   P.cd--;
   const want=!rec&&P.dash<=0&&(touchMode?ax!==null:(mouseDown||autoFire)&&ax!==null);
-  if(want&&P.cd<=0){P.cd=st.rate*60;shoot(P.x,P.y-5,Math.atan2(ay-(P.y-5),ax-P.x),178,st.bolt,st.dmg,0,46);}
-  P.hp=Math.min(st.maxhp,P.hp+2/60);if(P.flash>0)P.flash--;
+  if(want&&P.cd<=0){P.cd=st.rate*60;P.lastShot=G.tick;shoot(P.x,P.y-5,Math.atan2(ay-(P.y-5),ax-P.x),178,st.bolt,st.dmg,0,46);}
+  heal(P,st.maxhp);if(P.flash>0)P.flash--;
   const B=G.boss,br=rooms[5];
   if(!B.awake&&!B.dead&&P.x>(br.x+1)*16&&P.y>br.y*16&&P.y<(br.y+br.h)*16){B.awake=true;addText(B.x,B.y-44,'The Turnkey wakes',PAL.o,110);log('The Turnkey wakes. No recall now: break him or be forgotten.');G.shake=5;hudDirty=true;}
   for(let i=G.bags.length-1;i>=0;i--){const b=G.bags[i];if(b.t<24)continue;const dx=b.x-P.x,dy=b.y-P.y;if(dx*dx+dy*dy>144)continue;
-    if(!b.item){P.hp=Math.min(st.maxhp,P.hp+40);addText(P.x,P.y-20,'+40',PAL.H);G.bags.splice(i,1);}
+    if(!b.item){if(G.pouch<POUCH){G.pouch++;addText(P.x,P.y-20,'+1 potion',PAL.H,50);G.bags.splice(i,1);hudDirty=true;}else if(G.tick-G.full>90){G.full=G.tick;addText(P.x,P.y-22,'Pouch full',PAL['6'],50);}}
     else if(carried.length<8){carried.push(b.item);addText(P.x,P.y-22,'+'+b.item.d.name,b.item.d.tier===3?PAL.T:b.item.d.tier===2?PAL.o:PAL.b,80);G.bags.splice(i,1);hudDirty=true;}
     else if(G.tick-G.full>90){G.full=G.tick;addText(P.x,P.y-22,'Pack full',PAL['6'],50);}}
   if(G.portal){const dx=G.portal.x-P.x,dy=G.portal.y-P.y;if(dx*dx+dy*dy<120)extract();}
 }
+/* a drink: a third of max health over POT_T ticks, one at a time; the pouch for the player, pots for an ally */
+function drink(t){const isP=t===G.player,have=isP?G.pouch:t.pots;
+  if(t.dcd>0){if(isP&&t.drink>0&&G.tick-G.nag>50){G.nag=G.tick;addText(t.x,t.y-32,'Drinking',PAL['6'],40);}return false;}
+  if(have<=0){if(isP&&G.tick-G.nag>50){G.nag=G.tick;addText(t.x,t.y-32,'No potions',PAL.e,50);}return false;}
+  if(isP){G.pouch--;G.drank++;}else t.pots--;
+  t.drink=POT_T;t.dcd=POT_T+POT_CD;puff(t.x,t.y-6,8,[PAL.e,'#ffffff'],.6,16);
+  if(isP){log('You drink. '+G.pouch+' left in the pouch.');hudDirty=true;}return true;}
+/* the regen rule: a drink in progress heals; otherwise nothing within COMBAT_T ticks of a hit or a shot, a trickle after */
+function heal(t,max){if(t.dcd>0)t.dcd--;
+  if(t.drink>0){t.drink--;t.hp=Math.min(max,t.hp+max/3/POT_T);}
+  else if(G.tick-Math.max(t.lastHit,t.lastShot)>COMBAT_T)t.hp=Math.min(max,t.hp+REGEN_OUT);}
 function onPlate(o){const D=G.door;return o.x>=D.px&&o.x<D.px+D.pw&&o.y>=D.py&&o.y<D.py+D.ph;}
 function recallAlly(a){a.dead=true;a.gone=true;puff(a.x,a.y-6,22,[PAL.T,'#ffffff'],1.4,30);addText(a.x,a.y-30,a.name+' recalls',PAL.T,110);
   log(a.name+' was not on the plate and recalls: wager kept, nothing taken.');hudDirty=true;}
@@ -795,7 +818,7 @@ function updateAlly(a){
     if(!gather){if(d>keep+15){mx+=dx/d;my+=dy/d;}else if(d<keep-15){mx-=dx/d;my-=dy/d;}
       mx+=-dy/d*a.dir*.7;my+=dx/d*a.dir*.7;}
     a.face=dx<0?-1:1;a.cd--;
-    if(a.cd<=0){a.cd=18+G.rng()*8;shoot(a.x,a.y-5,Math.atan2(tgt.y-(tgt===B?12:6)-(a.y-5),dx)+(G.rng()-.5)*.16,160,'ally',a.dmg,0,46);}}
+    if(a.cd<=0){a.cd=18+G.rng()*8;a.lastShot=G.tick;shoot(a.x,a.y-5,Math.atan2(tgt.y-(tgt===B?12:6)-(a.y-5),dx)+(G.rng()-.5)*.16,160,'ally',a.dmg,0,46);}}
   if(!P.dead&&(gather||!tgt)){
     const tx=gather?D.px+16+(a.skin%2?-5:5):P.x+a.ox,ty=gather?D.py+24+(a.skin-2)*14:P.y+a.oy,dx=tx-a.x,dy=ty-a.y,d=Math.hypot(dx,dy);
     if(d>320){a.x=P.x;a.y=P.y;}else if(d>(gather?2:9)){mx=dx/d;my=dy/d;if(!tgt)a.face=dx<0?-1:1;}}
@@ -803,7 +826,8 @@ function updateAlly(a){
     if(d2<676){const d=Math.sqrt(d2)||1;mx+=dx/d*1.6*a.skill;my+=dy/d*1.6*a.skill;}}
   const ml=Math.hypot(mx,my);a.moving=ml>.12;if(a.moving)tryMove(a,mx/ml*58/60,my/ml*58/60);
   if(G.rng()<.01)a.dir=-a.dir;
-  a.hp=Math.min(a.max,a.hp+1.2/60);if(a.flash>0)a.flash--;
+  if(a.hp<a.max*.4&&a.pots>0&&a.dcd<=0&&drink(a))addText(a.x,a.y-30,a.name+' drinks',PAL.H,50);
+  heal(a,a.max);if(a.flash>0)a.flash--;
 }
 function updateEnemy(e){
   if(e.dead)return;if(e.flash>0)e.flash--;SRC=e.kind;
@@ -842,13 +866,13 @@ function updateBoss(b){
     if(b.t%150===0){const o=G.rng();for(let i=0;i<10;i++)shoot(b.x,b.y-12,o+i*.6283,30,'big',20,1,420);}
   }
 }
-function hurtDelver(t,dmg,src){t.hp-=dmg;t.flash=6;addText(t.x-6,t.y-22,'-'+dmg,PAL.e,34);
+function hurtDelver(t,dmg,src){t.hp-=dmg;t.flash=6;t.lastHit=G.tick;addText(t.x-6,t.y-22,'-'+dmg,PAL.e,34);
   if(t===G.player){G.shake=Math.max(G.shake,3);if(src)G.hitBy=src;if(t.recall>0)addText(t.x,t.y-32,'Recall broken',PAL.e,50);t.recall=0;t.rlock=30;}
   if(t.hp<=0)killDelver(t);else if(t!==G.player)hudDirty=true;}
 function killDelver(t){
   t.dead=true;t.hp=0;G.graves.push({x:t.x,y:t.y,name:t.name});puff(t.x,t.y-6,26,[PAL.o,PAL.y,PAL.r,PAL['5']],1.4,34);G.shake=Math.max(G.shake,6);
   if(t===G.player){G.state='dead';G.deadAt=G.tick;G.rolls=wager.filter(Boolean).map(it=>({item:it,pool:G.rng()<1/3}));
-    let p=0;for(const r of G.rolls)if(r.pool)p++;G.pool+=p;log('You are forgotten. '+(G.rolls.length-p)+' burned, '+p+' to the pool.');}
+    let p=0;for(const r of G.rolls)if(r.pool)p++;G.pool+=p;log('You are forgotten. '+(G.rolls.length-p)+' burned, '+p+' to the pool.'+(G.pouch?' '+G.pouch+(G.pouch===1?' potion':' potions')+' lost.':''));}
   else{let p=0;for(let i=0;i<3;i++)if(G.rng()<1/3)p++;G.pool+=p;
     addText(t.x,t.y-30,t.name+' forgotten',PAL.e,120);
     if(p)addText(t.x,t.y-38,p+' to the pool',PAL.T,120);
@@ -859,13 +883,14 @@ function dropBag(x,y,item,burst){const a=G.rng()*6.2832,v=burst?(1+G.rng()*2.2):
 function killEnemy(e){
   e.dead=true;const c=e.kind==='shade'?[PAL.P,PAL.p,'#ffffff']:e.kind==='gaoler'?[PAL.R,PAL.m,PAL.i]:[PAL.b,PAL.n,PAL.B];puff(e.x,e.y-6,14,c);
   const q=G.rng(),r=G.rng;
-  if(e.kind==='gaoler'){if(q<.3)dropBag(e.x,e.y,null);else if(q<.8)dropBag(e.x,e.y,mk(BYTIER[2][(r()*3)|0],r));else dropBag(e.x,e.y,mk(BYTIER[1][(r()*3)|0],r));}
-  else if(e.kind==='forgotten'){if(q<.12)dropBag(e.x,e.y,null);else if(q<.2)dropBag(e.x,e.y,mk(BYTIER[1][(r()*3)|0],r));}
-  else if(q<.1)dropBag(e.x,e.y,null);
+  /* a bag with no item is a potion for the pouch (it used to heal 40 on touch; healing is a consumable now, so it is rarer) */
+  if(e.kind==='gaoler'){if(q<.2)dropBag(e.x,e.y,null);else if(q<.7)dropBag(e.x,e.y,mk(BYTIER[2][(r()*3)|0],r));else dropBag(e.x,e.y,mk(BYTIER[1][(r()*3)|0],r));}
+  else if(e.kind==='forgotten'){if(q<.06)dropBag(e.x,e.y,null);else if(q<.14)dropBag(e.x,e.y,mk(BYTIER[1][(r()*3)|0],r));}
+  else if(q<.05)dropBag(e.x,e.y,null);
 }
 function killBoss(b){
   b.dead=true;b.hp=0;G.shake=12;G.flash=14;puff(b.x,b.y-10,90,[PAL.G,PAL.g,PAL.y,PAL.o,'#ffffff'],2.6,50);
-  const r=G.rng,drops=[mk('key3',r),mk(BYTIER[3][(r()*3)|0],r),mk(BYTIER[2][(r()*3)|0],r),mk(BYTIER[2][(r()*3)|0],r),null,null];
+  const r=G.rng,drops=[mk('key3',r),mk(BYTIER[3][(r()*3)|0],r),mk(BYTIER[2][(r()*3)|0],r),mk(BYTIER[2][(r()*3)|0],r),null,null,null];   /* three potions, rolled after the map */
   for(let i=0;i<Math.min(G.pool,7);i++)drops.push(mk(BYTIER[r()<.3?2:1][(r()*3)|0],r));
   for(const d of drops)dropBag(b.x,b.y-4,d,true);
   for(const bl of G.bullets)if(bl.from===1)puff(bl.x,bl.y,1,[S.bcol[bl.k]],.4,12);
@@ -919,9 +944,9 @@ function showDeath(){
   $('ovSub').textContent='What you died wearing is no longer yours.';
   const ul=$('ovList');ul.textContent='';let p=0;
   G.rolls.forEach((r,i)=>{if(r.pool)p++;ul.append(fateRow(S.icon[r.item.d.id],r.item.d.name,r.pool?'To the pool':'Burned',r.pool?'pool':'burn',i));});
-  $('ovNote').textContent=(G.rolls.length-p)+' burned for good. '+p+' returned to the pool for whoever finishes the boss.'+(carried.length?' The '+carried.length+' you were carrying stay where they fell.':'');
+  $('ovNote').textContent=(G.rolls.length-p)+' burned for good. '+p+' returned to the pool for whoever finishes the boss.'+(carried.length?' The '+carried.length+' you were carrying stay where they fell.':'')+(G.pouch?' '+G.pouch+(G.pouch===1?' potion':' potions')+' lost.':'');
   const b=$('ovBtn');b.textContent='Back to the Gatehouse';b.hidden=false;$('ovClose').hidden=true;$('ovBody').textContent='';
-  b.onclick=function(){ROLL.unshift({seed:G.seed,tick:G.tick,by:KILLERS[G.hitBy]||'the dark',items:G.rolls.map(r=>({item:r.item,pool:r.pool})),carried:carried.length});
+  b.onclick=function(){ROLL.unshift({seed:G.seed,tick:G.tick,by:KILLERS[G.hitBy]||'the dark',items:G.rolls.map(r=>({item:r.item,pool:r.pool})),carried:carried.length,pots:G.pouch});
     wager=[null,null,null,null,null];carried=[];nextSeed=G.seed*1664525+1013904223;enterGate();canvas.focus();};
   ov.hidden=false;
 }
@@ -931,9 +956,9 @@ function extract(){
   const ul=$('ovList');ul.textContent='';let i=0;
   for(const it of carried)ul.append(fateRow(S.icon[it.d.id],it.d.name,'Vaulted','keep',i++));
   for(const it of wager){if(!it)continue;const w=6+((G.rng()*7)|0);it.dur=Math.max(0,it.dur-w);ul.append(fateRow(S.icon[it.d.id],it.d.name,'-'+w+' wear','wear',i++));}
-  $('ovNote').textContent='What you carried goes to the strongbox; the best piece you own in each slot is fettered for the next delve. Better gear, more to lose.';
+  $('ovNote').textContent='What you carried goes to the strongbox'+(G.pouch?', with the '+G.pouch+(G.pouch===1?' potion':' potions')+' in your pouch':'')+'; the best piece you own in each slot is fettered for the next delve. Better gear, more to lose.';
   const b=$('ovBtn');b.textContent='Back to the Gatehouse';b.hidden=false;$('ovClose').hidden=true;$('ovBody').textContent='';
-  b.onclick=function(){vault.push(...carried);carried=[];nextSeed=G.seed*1664525+1013904223;enterGate();const n=fetterBest();if(n)log('Fettered the best piece you own in each slot.');canvas.focus();};
+  b.onclick=function(){vault.push(...carried);carried=[];stock+=G.pouch;nextSeed=G.seed*1664525+1013904223;enterGate();const n=fetterBest();if(n)log('Fettered the best piece you own in each slot.');canvas.focus();};
   log('You extract with '+carried.length+' pieces.');ov.hidden=false;hudDirty=true;
 }
 
@@ -943,10 +968,11 @@ function recallOut(){
   const ul=$('ovList');ul.textContent='';let i=0;const n=carried.length;
   for(const it of carried)ul.append(fateRow(S.icon[it.d.id],it.d.name,'Left behind','pool',i++));
   for(const it of wager){if(!it)continue;const w=6+((G.rng()*7)|0);it.dur=Math.max(0,it.dur-w);ul.append(fateRow(S.icon[it.d.id],it.d.name,'-'+w+' wear','wear',i++));}
-  $('ovNote').textContent=(n?n+' left for whoever breaks the Turnkey. ':'')+'Only the seal lets you walk out with loot. Recall saves what you wagered and nothing else.';
+  const keptPots=Math.min(G.pouch,G.brought);   /* what you brought is saved; what you picked up is left */
+  $('ovNote').textContent=(n?n+' left for whoever breaks the Turnkey. ':'')+'Only the seal lets you walk out with loot. Recall saves what you wagered and nothing else'+(keptPots?' — the '+keptPots+(keptPots===1?' potion':' potions')+' you brought come back with you':'')+(G.pouch>keptPots?'; the '+(G.pouch-keptPots)+' you found stay':'')+'.';
   carried=[];G.player.recall=0;puff(G.player.x,G.player.y-6,30,[PAL.T,'#ffffff'],1.6,30);
   const b=$('ovBtn');b.textContent='Back to the Gatehouse';b.hidden=false;$('ovClose').hidden=true;$('ovBody').textContent='';
-  b.onclick=function(){nextSeed=G.seed*1664525+1013904223;enterGate();canvas.focus();};
+  b.onclick=function(){stock+=keptPots;nextSeed=G.seed*1664525+1013904223;enterGate();canvas.focus();};
   log('You recall. '+n+' left behind.');ov.hidden=false;hudDirty=true;
 }
 
@@ -994,7 +1020,7 @@ function enterGate(){
     moving:false,skin:i+1,dead:false,name:NAMES[i],dir:i%2?1:-1,dmg:8,skill:.55+i*.2});
   carried=[];skillHit=false;useHit=false;panel=null;
   if(!wager[4]||wager[4].d.skill!==skillSel)wager[4]={d:ITEMS[SKILLIDS[skillSel]],dur:90};
-  if(++gateVisits===1){mintSet(true);log('The Gatehouse. A tier-I set is minted for you; the Mint sells more. Nothing is at risk until the door seals.');}
+  if(++gateVisits===1){mintSet(true);stock+=2;log('The Gatehouse. A tier-I set and two potions are minted for you; the Mint sells more. Nothing is at risk until the door seals.');}
   else log('The Gatehouse. Nothing is at risk here.'+(wager.slice(0,4).some(Boolean)?'':' Nothing fettered: the Mint sells a tier-I set.'));
   refreshStats();
   const h=$('hint');h.textContent=(touchMode||COARSE)?'Drag to walk · tap a thing to use it':'WASD to walk · Space to use a thing · 1 2 3 your skill';h.classList.remove('off');
@@ -1024,6 +1050,9 @@ function openPanel(id){
   if(id==='strongbox'){$('ovSub').textContent='What you hold. Nothing in here can be lost.';const kit=el('ul','kit');let n=0;
     for(let s=0;s<4;s++)if(wager[s]){n++;kit.append(kitRow(wager[s],'Fettered','keep',SLOTS[s]+' · tier '+ROMAN[wager[s].d.tier]+' · at risk once the door seals'));}
     for(const it of vault){n++;kit.append(kitRow(it,'Safe','pool',SLOTS[it.d.slot]+' · tier '+ROMAN[it.d.tier]+' · '+it.dur+'% sound'));}
+    {const li=el('li',stock?'':'empty');li.style.setProperty('--i',0);const ic=el('div','ico');ic.append(iconEl(S.flask,2));const body2=el('div');
+      body2.append(el('span','nm','Potions'),el('span','meta',stock?stock+' in the strongbox · up to '+POUCH+' come with you':'none · the Mint sells them, the Turnkey drops them'));
+      li.append(ic,body2);if(stock){li.append(el('span','stamp pool','Safe'));n++;}kit.append(li);}
     if(n)body.append(kit);else body.append(el('p','','Empty. The Mint sells a tier-I set, and what you extract lands here.'));
     note.textContent='The vault is the wallet: a piece is at risk only inside a run.';}
   else if(id==='post'){$('ovSub').textContent='Choose what you wager. It locks when the door seals.';const kit=el('ul','kit');
@@ -1051,13 +1080,16 @@ function openPanel(id){
     if(!ROLL.length)body.append(el('p','','No one yet. The first death is written here, by name.'));
     else{const ul=el('ul','roll');for(const r of ROLL){const li=el('li'),who=el('span','who');who.append(el('b','','You'),document.createTextNode(' fell to '+r.by+' · seed '+hex(r.seed)+' · tick '+r.tick.toLocaleString('en-US')));
         const f=el('ul','fates');let p=0;r.items.forEach((x,i)=>{if(x.pool)p++;const row=fateRow(S.icon[x.item.d.id],x.item.d.name,x.pool?'To the pool':'Burned',x.pool?'pool':'burn',i);f.append(row);});
-        li.append(who,f,el('span','meta',(r.items.length-p)+' burned, '+p+' to the pool'+(r.carried?', '+r.carried+' carried and left where they fell':'')+'. The seed stands in for the replay.'));ul.append(li);}
+        li.append(who,f,el('span','meta',(r.items.length-p)+' burned, '+p+' to the pool'+(r.carried?', '+r.carried+' carried and left where they fell':'')+(r.pots?', '+r.pots+(r.pots===1?' potion':' potions')+' lost':'')+'. The seed stands in for the replay.'));ul.append(li);}
       body.append(ul);}}
   else if(id==='mint'){$('ovSub').textContent='Burn token and ETH for a tier-I set.';
     const row=el('div','mintrow');for(const id2 of ['wand1','robe1','ring1']){const f=el('figure'),c=el('div','ico');c.append(iconEl(S.icon[id2],2));f.append(c,el('figcaption','',ITEMS[id2].name));row.append(f);}
     body.append(row,el('p','','120 token + 0.002 ETH a set, placeholder amounts. The token is burned for good; the ETH side funds what bosses drop.'));
+    const prow=el('div','mintrow'),pf=el('figure'),pc=el('div','ico');pc.append(iconEl(S.flask,2));pf.append(pc,el('figcaption','','Potion'));prow.append(pf);
+    const pb=el('button','quiet','Mint a potion · '+POT_PRICE+' token');pb.type='button';pb.style.alignSelf='center';pb.onclick=function(){stock++;log('Minted a potion: '+POT_PRICE+' token burned. Placeholder amount.');hudDirty=true;openPanel('mint');note.textContent='Minted a potion. '+stock+' in the strongbox; up to '+POUCH+' come with you.';};prow.append(pb);
+    body.append(prow,el('p','',POT_PRICE+' token a potion, a placeholder. A drink is a third of your health over two seconds; healing is a consumable here, not a timer.'));
     btn.hidden=false;btn.textContent='Mint a tier-I set';btn.onclick=function(){mintSet(false);openPanel('mint');note.textContent='Minted. Empty slots are fettered with it; the rest waits in the strongbox.';};
-    note.textContent=vault.length+' spare piece'+(vault.length===1?'':'s')+' in the strongbox.';note.className='';}
+    note.textContent=vault.length+' spare piece'+(vault.length===1?'':'s')+' and '+stock+(stock===1?' potion':' potions')+' in the strongbox.';note.className='';}
   ov.hidden=false;
 }
 function closePanel(){panel=null;const ov=$('overlay');ov.hidden=true;$('ovBtn').hidden=false;$('ovClose').hidden=true;$('ovNote').className='';canvas.focus();}
@@ -1156,6 +1188,7 @@ function render(){
   if(!P.dead&&G.state==='play'&&P.recall>0){const x=Math.round(P.x)-camx,y=Math.round(P.y)-camy,f=P.recall/RECALL;
     textC(g,'Recalling',x,y-32,PAL.T);bar(g,x-10,y-25,20,f,PAL.T);
     for(let i=0;i<24*f;i++){const a=-1.5708+i*.2618;g.fillStyle=i%2?PAL.T:'#ffffff';g.fillRect(Math.round(x+Math.cos(a)*14),Math.round(y-4+Math.sin(a)*9),1,1);}}
+  if(!P.dead&&G.state==='play'&&P.drink>0){const x=Math.round(P.x)-camx,y=Math.round(P.y)-camy;textC(g,'Drinking',x,y-32,PAL.H);bar(g,x-10,y-25,20,1-P.drink/POT_T,PAL.H);}
   if(G.portal&&G.state==='play')textC(g,'Extract',Math.round(G.portal.x)-camx,Math.round(G.portal.y)-camy-40,PAL.T);
   if(G.gate&&G.near&&!panel&&!(G.near.id==='door'&&G.door.t>0)){const o=G.near,r=objectRect(o),cx=(o.tx+.5)*16-camx;textC(g,o.name,cx,r.y0+2,PAL.b);textC(g,(touchMode||COARSE)?'tap':'space',cx,r.y0+10,PAL['6']);}
   if(G.door&&(G.state==='play'||G.gate)){const D=G.door,cx=D.px+16-camx,cy=D.py+24-camy;
@@ -1192,6 +1225,7 @@ function rebuildHud(){
     b.onclick=function(){if(i===skillSel&&G.state==='play')skillHit=true;else pickSkill(i);canvas.focus();};sk.append(b);});
   $('skillNote').textContent=lk?'Locked in for this delve.':'One skill per delve. Choose it before the door seals.';
   const rb=$('recallBtn'),shut=G.boss.awake||G.gate;rb.textContent=G.gate?'Nothing to recall from here':shut?'No recall at the Turnkey':'Hold R to recall';rb.classList.toggle('shut',shut);
+  $('drinkBtn').classList.toggle('shut',G.gate);
   const bag=$('bag');bag.textContent='';
   for(let i=0;i<8;i++){const c=el('div');if(carried[i]){c.append(iconEl(S.icon[carried[i].d.id],2));c.title=carried[i].d.name+' (tier '+ROMAN[carried[i].d.tier]+')';}bag.append(c);}
   const lg=$('log');lg.textContent='';for(const s of G.log)lg.append(el('li','',s));
@@ -1210,6 +1244,7 @@ function tickHud(){
   for(const a of G.allies)if(!a.dead&&a._bar)a._bar.style.width=Math.max(0,a.hp/a.max*100)+'%';
   $('skillFill').style.width=(P.scd>0?(1-P.scd/P.scdMax)*100:100)+'%';$('skillNum').textContent=P.scd>0?(P.scd/60).toFixed(1)+' s':'Space';
   $('recallBtn').classList.toggle('on',P.recall>0);
+  $('drinkTxt').textContent=G.gate?'Potions · '+stock+' in the strongbox':'Q · drink · '+G.pouch+' / '+POUCH;$('drinkBtn').classList.toggle('on',P.drink>0);
   $('rec').textContent=(G.gate?'Gatehouse · next seed ':'seed ')+hex(G.seed)+' · tick '+G.tick.toLocaleString('en-US')+' · 60 Hz · shard 1 of 1';
 }
 
@@ -1238,7 +1273,7 @@ window.addEventListener('keydown',function(e){const k=e.key.toLowerCase();
   if((ae===canvas&&k.indexOf('arrow')===0)||(k===' '&&(ae===canvas||ae===document.body||!ae)))e.preventDefault();
   if(e.metaKey||e.ctrlKey||e.altKey)return;
   keys[k]=true;
-  if(!e.repeat){if(k==='f')autoFire=!autoFire;else if(k===' ')skillHit=true;else if(k==='e')useHit=true;else if(k==='escape'&&panel)closePanel();else if(k==='1'||k==='2'||k==='3')pickSkill(+k-1);}
+  if(!e.repeat){if(k==='f')autoFire=!autoFire;else if(k===' ')skillHit=true;else if(k==='q')drinkHit=true;else if(k==='e')useHit=true;else if(k==='escape'&&panel)closePanel();else if(k==='1'||k==='2'||k==='3')pickSkill(+k-1);}
   started();});
 window.addEventListener('keyup',function(e){keys[e.key.toLowerCase()]=false;});
 window.addEventListener('blur',function(){for(const k in keys)keys[k]=false;mouseDown=false;});
@@ -1259,6 +1294,7 @@ canvas.addEventListener('contextmenu',function(e){e.preventDefault();});
 const recallBtn=$('recallBtn');
 recallBtn.addEventListener('pointerdown',function(e){keys.r=true;started();try{recallBtn.setPointerCapture(e.pointerId);}catch(_){}});
 ['pointerup','pointercancel','lostpointercapture'].forEach(function(n){recallBtn.addEventListener(n,function(){keys.r=false;});});
+const drinkBtn=$('drinkBtn');drinkBtn.addEventListener('pointerdown',function(){if(G&&G.state==='play')drinkHit=true;started();canvas.focus();});
 function resize(){const r=stage.getBoundingClientRect(),dpr=Math.min(window.devicePixelRatio||1,3);
   const W=Math.max(2,Math.round(stage.clientWidth*dpr)),H=Math.max(2,Math.round(stage.clientHeight*dpr));
   if(!r.width)return;canvas.width=W;canvas.height=H;zoom=Math.max(1,Math.floor(W/330));
@@ -1268,7 +1304,7 @@ function frame(now){requestAnimationFrame(frame);if(!last)last=now;acc+=Math.min
   let n=0;while(acc>=16.667&&n<5){update();acc-=16.667;n++;}if(n===5)acc=0;
   render();if(hudDirty||G.tick-hudAt>=6){hudAt=G.tick;tickHud();}}
 function start(){
-  buildSprites();buildSheet();enterGate();resize();
+  buildSprites();buildSheet();$('drinkBtn').prepend(iconEl(S.flask,1.5));$('drinkBtn').firstChild.style.display='inline-block';$('drinkBtn').firstChild.style.verticalAlign='middle';$('drinkBtn').firstChild.style.marginRight='6px';enterGate();resize();
   if(window.ResizeObserver)new ResizeObserver(resize).observe(stage);else window.addEventListener('resize',resize);
   window.__oub={get G(){return G;},rooms:function(){return rooms;},
     warp:function(i){const r=rooms[i],x=(r.cx+.5)*16-(i===5?70:0),y=(r.cy+.5)*16;G.player.x=x;G.player.y=y;G.cam.x=x;G.cam.y=y;for(const a of G.allies){a.x=x+a.ox;a.y=y+a.oy;}},
@@ -1276,7 +1312,8 @@ function start(){
     mapdump:function(){return {MW:MW,MH:MH,map:Array.from(map),rooms:JSON.stringify(rooms),px:mapCv.getContext('2d').getImageData(0,0,mapCv.width,mapCv.height).data.reduce(function(h,v){return (h*31+v)>>>0;},7)};},
     hurt:function(n){hurtDelver(G.player,n);},boss:function(hp){G.boss.hp=hp;},skill:function(i){pickSkill(i);skillHit=true;},give:function(id){carried.push(mk(id,G.rng));hudDirty=true;},
     delve:function(){if(G.state==='gate')startDelve();},goto:function(id){const o=GATE_OBJECTS.find(x=>x.id===id),x=o.spr?(o.tx+.5)*16:21.5*16,y=o.spr?(o.ty+.5)*16+(o.ty<7?20:-20):7.5*16;G.player.x=x;G.player.y=y;G.allies.forEach((a,i)=>{a.x=Math.max(28,x-20-i*12);a.y=y+8;});},
-    use:function(){useHit=true;},close:closePanel,back:function(){$('ovBtn').click();},roll:function(){return ROLL;},vault:function(){return vault;},wager:function(){return wager;}};
+    use:function(){useHit=true;},close:closePanel,back:function(){$('ovBtn').click();},roll:function(){return ROLL;},vault:function(){return vault;},wager:function(){return wager;},
+    pouch:function(){return G.pouch;},stock:function(n){if(n!==undefined)stock=n;return stock;},drink:function(){drinkHit=true;},mintPotion:function(){stock++;hudDirty=true;}};
   requestAnimationFrame(frame);
 }
 if(window.claude&&window.claude.hot&&window.claude.hot.ready)window.claude.hot.ready(start);else start();

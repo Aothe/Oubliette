@@ -36,7 +36,12 @@ not play-to-earn: permadeath is the sink the genre never had.
   exchange here), the shard door (its plate forms the shard in three seconds; nothing enters
   with nothing fettered), the Roll of the Forgotten (this session's deaths by name, kit, what
   returned, who killed them, the seed) and the Mint (a tier-I set for placeholder token + ETH).
-  Death, extraction and recall all lead back to it. Open the file in a browser;
+  Death, extraction and recall all lead back to it. Healing is **potions** (2026-10-22, SPEC §2
+  "Healing"): minted at the Mint (15 token, placeholder) or dropped by the Turnkey (three) and now
+  and then by mobs, up to five in the pouch, drunk with Q or the HUD button for a third of max
+  health over two seconds, one at a time; lost on death, kept on extraction, and on recall only
+  the ones you brought; no regeneration for four seconds after a hit or a shot, half a point a
+  second after; the ally bots carry two each. Open the file in a browser;
   `node proto/visual/shots.cjs` screenshots each game state into `proto/visual/out/` (gitignored).
 - `art/` is the art bank (2026-10-02): every sprite as data — `bank.js` (the palette, the loader,
   the tile generator), `creatures.js`, `items.js`, `world.js` — and `index.html`, a gallery that
