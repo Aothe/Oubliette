@@ -40,10 +40,11 @@ not play-to-earn: permadeath is the sink the genre never had.
   EIP-2935 history window, drand on the BLS precompiles) and `gas/` (a measuring-stick contract
   set, not the contracts, with every action replayed live). Outputs go to `probe/chain/out/` and
   `probe/chain/gas/out/` (gitignored). `docs/chain.md` is the reading.
-- `docs/dungeons.md` is design research for the game after the first dungeon (2026-10-05): a
-  proposal with its verdict first; the operator's decisions on it (2026-10-20) are in SPEC §2 and
-  repeated at its end. `docs/dungeons-web-notes.md` is the sourced researcher output behind it and
-  `docs/dungeons-layouts.txt` the sizing sketch it cites.
+- `docs/dungeons.md` and `docs/reentry.md` are design research for the game after the first dungeon
+  (2026-10-05) — bigger dungeons and interactables, re-entry after death: proposals with their
+  verdicts first; the operator's decisions on them (2026-10-20) are in SPEC §2 and repeated at the
+  end of each. `docs/*-web-notes.md` hold the sourced researcher output behind each,
+  `docs/dungeons-layouts.txt` the sizing sketch.
 - Status: SPEC written 2026-09-25; `sim/economy.py` v0 exists and its 10,000-day, 5-seed sweep
   (`--sweep`, 228 runs) is in SPEC §5: supply is stable iff `(1 − s)·deaths > fresh drops` — flat
   at `s = 0`, `d0` 0.10–0.20; flat in circulation only at `s = ⅓` (nothing in v0 buys t2/t3);
