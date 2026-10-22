@@ -1,0 +1,89 @@
+Sizing sketch cited by docs/dungeons.md (2026-10-05). Output of a scratch generator that was
+not kept, so the table cannot be re-run from the repo; the maps are one seed each.
+
+Dungeon sizing sketch (scratch generator, not the game). Walk at 4 tiles/s = the slice (64 px/s on 16 px tiles).
+est = walk + 28 s per fight room + 100 s boss (the slice's pace with scripted allies); estAll adds 35 s per side room and 45 s per maze.
+
+preset   rooms fights sides mazes  floor  path(tiles)  walk  est(spine)  est(all)   map
+slice      6.0   4.0   0.0   0.0   1065         193   48 s        260 s      260 s   128x60  today: hall, four fights, boss, in a line
+two       11.0   5.0   3.0   1.0   1691         309   77 s        317 s      467 s   160x96  dungeon two: a spine of 8, 3 side rooms, 1 maze
+three     16.0   7.0   5.0   2.0   2384         466  117 s        413 s      678 s   224x128  a big one: 11 on the spine, 5 side rooms, 2 mazes
+
+One seed of each, 1 char = 2x4 tiles. H hall, F fight, M maze, S side room, B boss.
+
+[slice] seed 7919: 6 rooms, 1033 floor tiles, path 188 tiles
+                                                                
+                                                                
+                                                                
+                                                                
+                                                                
+                                           ###########.         
+  ######.                                  ############         
+  ###H###########.                         #####B######         
+  #######  ###F########..         .......  ############         
+           ######. ######..#####..###F################.         
+                   ###F######F###########........               
+                   ......                                       
+                                                                
+                                                                
+                                                                
+
+[two] seed 7919: 11 rooms, 1704 floor tiles, path 307 tiles
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+            ####                                                                
+            ##S#                       #S##               .......   ############
+  .......   ####    ####.              ###.               ###F##################
+  #######....##     ##S#.               ##       .#####   #######...#####B######
+  ###H############...##            .....##.....  ###F#########.     ############
+  ######.  ###F##########  .####   #.##.###.##.  .#####             ............
+                   ###F######F##########M############                           
+                   .#####  .####  .############......                           
+                                   ########.###                                 
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+
+[three] seed 7919: 16 rooms, 2456 floor tiles, path 461 tiles
+                                                                                                                
+                                                                                                                
+                                                                                                                
+                                                                                                                
+                                                                                                                
+                                                                                                                
+                                                                                                                
+                                                                                                                
+                                                                                                                
+                                                                                                                
+                                                                                 #####                          
+                                                                                 ##S##                          
+                                                  ##S##                          #####                          
+                                                  ####.   .......   ######         ##                           
+  .......                                          ##     ###F#########F#################.                      
+  #######......                                  .#####   #######...######    ##.#.##.###.          .##########.
+  ###H############.....            ............  ###F##########              .#.###M#############   ############
+  ######.  ###F##########  .####   #######.###.  .#####      ##               ####.######.  ##F###########B#####
+                   ###F######F##########M############      ##S###             ............  #####...############
+                   .#####  .####  .###.########...####     #####.                           .....   .##########.
+                     ##            ##.#########   ##S#                                                          
+                    ####.                         .###                                                          
+                    ##S#.                                                                                       
+                                                                                                                
+                                                                                                                
+                                                                                                                
+                                                                                                                
+                                                                                                                
+                                                                                                                
+                                                                                                                
+                                                                                                                
+                                                                                                                
