@@ -58,7 +58,7 @@ ul.slots,ul.party,ul.log{margin:0;padding:0;list-style:none;display:flex;flex-di
 .log li:first-child{color:var(--bone)}
 .rec{font-size:15px;color:var(--mute);font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
 
-.hint{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);padding:5px 10px;background:rgba(13,11,20,.82);border:2px solid var(--stone-4);font-size:16px;white-space:nowrap;pointer-events:none;transition:opacity .4s}
+.hint{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);max-width:calc(100% - 32px);box-sizing:border-box;padding:5px 10px;background:rgba(13,11,20,.82);border:2px solid var(--stone-4);font-size:16px;text-align:center;pointer-events:none;transition:opacity .4s}
 .hint.off{opacity:0}
 .overlay{position:absolute;inset:0;display:grid;place-items:center;padding:10px;background:rgba(13,11,20,.5);overflow:auto}
 .panel{width:min(400px,100%);padding:14px 16px 16px;background:var(--stone-1);border:2px solid var(--stone-4);box-shadow:4px 4px 0 var(--void)}
@@ -138,7 +138,7 @@ button:focus-visible{outline:2px solid var(--verdigris);outline-offset:3px}
 <div class="page">
   <header class="mast">
     <h1>oubliette</h1>
-    <p>A visual slice: one class, one dungeon, one boss. Every sprite, tile and glyph on this page is drawn in code. No image files.</p>
+    <p>A visual slice: one class, one dungeon, one boss, and the village at its gate. Every sprite, tile and glyph on this page is drawn in code. No image files.</p>
   </header>
 
   <main class="cabinet">
@@ -161,7 +161,7 @@ button:focus-visible{outline:2px solid var(--verdigris);outline-offset:3px}
         <li><b>WASD / arrows</b> move</li>
         <li><b>Mouse</b> aim, hold to fire</li>
         <li><b>F</b> auto-fire</li>
-        <li><b>Space</b> your skill in the dungeon, or use a thing in the Gatehouse (<b>E</b> too)</li>
+        <li><b>Space</b> your skill in the dungeon, or talk at a desk in the village (<b>E</b> too)</li>
         <li><b>1 2 3</b> choose your skill before the door seals</li>
         <li><b>R</b> hold three seconds to recall; a hit breaks it; none at the boss</li>
         <li><b>Q</b> drink a potion: a third of your health over two seconds; five in the pouch at most</li>
@@ -224,7 +224,7 @@ button:focus-visible{outline:2px solid var(--verdigris);outline-offset:3px}
           <li>One skill per delver, wagered and lost like any other piece.</li>
           <li>You may recall before the boss, never at him. The loot is for those who lock in.</li>
           <li>The boss door is sealed. Stand on the plate for three seconds: those on it go through and the door seals behind them; anyone else recalls with their wager. The Turnkey is measured to the head-count.</li>
-          <li>Every run starts in the Gatehouse: a strongbox, a fettering post, a ledger, the shard door, the Roll of the Forgotten and the mint. Nothing is at risk until the door seals, and nothing enters with nothing at stake.</li>
+          <li>Every run starts in the village outside the dungeon: six desks, each a person behind a counter, for the strongbox, the fettering, the exchange, the Roll of the Forgotten and the mint, and the road east to the Gaol gate where the shard forms. Nothing is at risk until the gate seals, and nothing enters with nothing at stake.</li>
           <li>Healing is potions, not regeneration: minted at the Mint or dropped by the Turnkey, carried into the run and at risk, drunk for a third of your health. Nothing heals for free in a fight.</li>
         </ul>
       </div>
@@ -237,7 +237,7 @@ button:focus-visible{outline:2px solid var(--verdigris);outline-offset:3px}
           <li>Boss drops fall as bags to pick up. The spec's weighted lottery is not modelled.</li>
           <li>The three skills and their items: Slip (Moth Feather), Mend (Moss Poultice), Sunder (Breaker's Maul). Minting one is free here.</li>
           <li>Recall's numbers: three seconds, broken by any hit. It saves what you wagered and leaves what you carried, so only the seal pays.</li>
-          <li>The Gatehouse's shape and furniture, and the mint's prices (120 token + 0.002 ETH a set, 15 token a potion) are placeholders. The ledger lists nothing: there is no exchange here.</li>
+          <li>Lastlight: the village's name, its shape, its people and their names, the two who walk and the hens, and the mint's prices (120 token + 0.002 ETH a set, 15 token a potion). All placeholders. The exchange's book is empty: there is no exchange here.</li>
           <li>The potion's numbers: five in the pouch, a third of your health over two seconds, one at a time; no regeneration for four seconds after a hit or a shot, half a point a second after. The Turnkey drops three; the Forgotten, Shades and Gaolers drop one now and then.</li>
         </ul>
       </div>
@@ -263,10 +263,10 @@ const RM=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)'
 const PAL={k:'#0d0b14','1':'#17141f','2':'#25212f','3':'#363145','4':'#4c4660','5':'#6b6680','6':'#9390a3',
  b:'#d9cfb4',B:'#f3ecd6',n:'#a39878',o:'#e8822e',y:'#f7c04a',Y:'#fff1a8',r:'#b3391f',R:'#7a1626',e:'#c22a3a',
  t:'#2f8f83',T:'#5fd1b5',d:'#1c5a5a',p:'#6b3fa0',P:'#a678e0',v:'#3d2466',w:'#5a3a24',W:'#8a5a34',l:'#b98a55',
- g:'#c9952c',G:'#f2cf5e',s:'#d99a6c',S:'#f0c090',i:'#4a5263',m:'#7d8796',M:'#b9c3cf',h:'#4d7a3a',H:'#86b552','#':'#ffffff'};
+ g:'#c9952c',G:'#f2cf5e',s:'#d99a6c',S:'#f0c090',i:'#4a5263',m:'#7d8796',M:'#b9c3cf',h:'#4d7a3a',H:'#86b552',f:'#2c4d2a',F:'#4f8a3f','#':'#ffffff'};
 const PALNAMES={k:'void','1':'stone 1','2':'stone 2','3':'stone 3','4':'stone 4','5':'stone 5','6':'stone 6',b:'bone',B:'bone light',n:'bone shade',
  o:'ember',y:'flame',Y:'flame core',r:'cinder',R:'old blood',e:'blood',t:'verdigris',T:'verdigris light',d:'verdigris deep',p:'shade',P:'shade light',v:'shade deep',
- w:'wood dark',W:'wood',l:'leather',g:'gold shade',G:'gold',s:'skin shade',S:'skin',i:'iron',m:'steel',M:'steel light',h:'moss',H:'moss light','#':'white'};
+ w:'wood dark',W:'wood',l:'leather',g:'gold shade',G:'gold',s:'skin shade',S:'skin',i:'iron',m:'steel',M:'steel light',h:'moss',H:'moss light',f:'leaf',F:'leaf light','#':'white'};
 
 /* ---------- sprite source ---------- */
 const DELVER_A=[
@@ -382,6 +382,201 @@ const BOOKSHELF_L=["kkkkkkkk","kwwwwwww","kwekpkgk","kwekpktk","kwekpktk","kwwww
 const BOOKSHELF=BOOKSHELF_L.map(r=>r+r.split('').reverse().join(''));
 const BANNER=["kkkkkkkkkk","kggggggggk",".kRRRRRRk.",".kRRRRRRk.",".kRRGGRRk.",".kRGRRGRk.",".kRGRRGRk.",".kRRGGRRk.",".kRRGRRRk.",".kRRGGRRk.",".kRRGRRRk.",".kRRRRRRk.",".kRRkkRRk.",".kRk..kRk.",".kk....kk."];
 const BRAZIER=[["....y..y....","...yYyyYy...","..oyYYYYyo..","..ooyYYyoo..",".kkkkkkkkkk.",".kiiiiiiiik.","..kiiiiiik..","...kkiikk...","....kiik....","....kiik....","...kiiiik...","..kkkkkkkk.."],["...y...y....","..yYy.yYy...","..oyYYYYyo..","..ooyYYyoo..",".kkkkkkkkkk.",".kiiiiiiiik.","..kiiiiiik..","...kkiikk...","....kiik....","....kiik....","...kiiiik...","..kkkkkkkk.."]];
+/* ---------- the village's own ---------- */
+const VILLAGER_A=[
+"................",
+".....kkkkkk.....",
+"....kHHHHHHk....",
+"....kHHHHHHk....",
+"....kHSSSSHk....",
+"....kSkSSkSk....",
+"....kSSSSSSk....",
+".....kSssSk.....",
+"....kkCCCCkk....",
+"...kCCCCCCCCk...",
+"..kSkCcCCcCkSk..",
+"..kkkCCCCCCkkk..",
+"....kCccccCk....",
+"....kCCCCCCk....",
+"....kwwkkwwk....",
+"....kkkk.kkkk..."];
+const VILLAGER_B=VILLAGER_A.slice(0,14).concat(["....kwwkwwk.....","....kkkkkkk....."]);
+const apron=rows=>rows.map((r,y)=>y>=9&&y<=13?r.slice(0,6)+'llll'+r.slice(10):r);   /* the smith's leather */
+/* hair H, tunic C and its shade c; the helm is hair in steel */
+const LOOKS={ashby:{H:'6',C:'t',c:'d'},gerrit:{H:'r',C:'4',c:'3'},ione:{H:'w',C:'P',c:'p'},quill:{H:'n',C:'g',c:'w'},tobin:{H:'M',C:'5',c:'4'},maud:{H:'M',C:'m',c:'i'},hob:{H:'w',C:'h',c:'f'},nell:{H:'l',C:'R',c:'v'}};
+const HEN=[[
+".....e..",
+"....kBk.",
+"...kBkBo",
+".kkBBBBk",
+"kBBBBBk.",
+".kBBBBk.",
+"..kkkk..",
+"..o..o.."],[
+"........",
+"........",
+".kkkk.e.",
+"kBBBBkBk",
+"kBBBBBBo",
+".kBBBBk.",
+"..kkkk..",
+"..o..o.."]];
+const TREE=[
+"......kkkk......",
+"....kkFFFFkk....",
+"...kFFFFFFFFk...",
+"..kFFFFFFFFFFk..",
+"..kFFFFFFFFfFk..",
+".kFFFFFFFFFFffk.",
+".kFFFFFFFFfFffk.",
+".kFFFfFFFFFFffk.",
+"kFFFFFFFfFFFfffk",
+"kFFfFFFFFFFffffk",
+"kFFFFFFfFFfffffk",
+"kfFFFFFFFFffffFk",
+".kffFFfFFfffffk.",
+".kfffffFfffffkk.",
+"..kffffffffffk..",
+"...kkfffffkkk...",
+".....kkwwkk.....",
+".......kwwk.....",
+".......kwwk.....",
+".......kwwk.....",
+"......kwWwwk....",
+"......kkkkkk...."];
+const LANTERN=[
+"..kk..",
+".kiik.",
+"kiYYik",
+"kiYyik",
+"kiyyik",
+".kiik.",
+"..kk..",
+"..ww..",
+"..ww..",
+"..ww..",
+"..ww..",
+"..ww..",
+"..ww..",
+"..ww..",
+"..ww..",
+"..ww..",
+"..ww..",
+"..ww..",
+".kwwk.",
+"kwwwwk",
+"kkkkkk"];
+const WELL=[
+"..........kkkk..........",
+"........kkWWWWkk........",
+"......kkWWWWWWWWkk......",
+"....kkWWwWWWWWWwWWkk....",
+"..kkWWWWWWwWWwWWWWWWkk..",
+"kkWWwWWWWWWWWWWWWwWWWWkk",
+"kwwwwwwwwwwwwwwwwwwwwwwk",
+"..kwwk............kwwk..",
+"..kwwk............kwwk..",
+"..kwwk.....kk.....kwwk..",
+"..kwwk.....kk.....kwwk..",
+"..kwwk....kWWk....kwwk..",
+"..kwwk....kWWk....kwwk..",
+"..kwwk.....kk.....kwwk..",
+"....kkkkkkkkkkkkkkkk....",
+"..kk6666666666666666kk..",
+".k56655555555555555665k.",
+"k5665kkkkkkkkkkkkkk5665k",
+"k565kddddddddddddddk565k",
+"k565kdddddtddddddddk565k",
+"k565kddddddddddddddk565k",
+"k565kddddddddddtdddk565k",
+"k5665kkkkkkkkkkkkkk5665k",
+".k56655555555555555665k.",
+".k44555555555555555544k.",
+"..kk4444444444444444kk..",
+"....kkkkkkkkkkkkkkkk...."];
+const FIRE=[[
+"......y.........",
+".....yYy..y.....",
+"....yYYYy.yY....",
+"....oYYYYyYYo...",
+"...ooyYYYYYyo...",
+"...rooyYYyoor...",
+"..k.roooooor.k..",
+".kWkkrrrrrrkkWk.",
+"kWWWWkkkkkkWWWWk",
+".kwwWWWwwWWWwwk.",
+"..kkkwwkkkwwkkk.",
+"....kkk...kkk..."],[
+"........y.......",
+".....y.yYy......",
+"....yYyYYYy.....",
+"....yYYYYYYo....",
+"...oyYYYYYyoo...",
+"...rooyYYyoor...",
+"..k.roooooor.k..",
+".kWkkrrrrrrkkWk.",
+"kWWWWkkkkkkWWWWk",
+".kwwWWWwwWWWwwk.",
+"..kkkwwkkkwwkkk.",
+"....kkk...kkk..."]];
+const STOOL=[
+".kkkkkk.",
+"kWWWWWWk",
+"kWwWWwWk",
+"kkwwwwkk",
+".kwkkwk.",
+".kk..kk."];
+const STELE=[
+"......kkkkkk......",
+"....kk666666kk....",
+"...k6666666666k...",
+"..k666655556666k..",
+"..k665dTTTTd566k..",
+"..k65dT5555Td56k..",
+"..k65dT5tt5Td56k..",
+"..k65dT5555Td56k..",
+"..k665dTTTTd566k..",
+"..k665555555556k..",
+"..k65k5k5kk5k56k..",
+"..k655555555556k..",
+"..k65kk5k5k5k56k..",
+"..k655555555556k..",
+"..k65k5kk5k5k56k..",
+"..k655555555556k..",
+"..k65kk5k5kk5k6k..",
+"..k655555555556k..",
+"..k65k5k5kk5556k..",
+"..k655555555556k..",
+"..k555555555555k..",
+"..k444444444444k..",
+".k55444444444444k.",
+".k44444444444444k.",
+"..kkkkkkkkkkkkkk.."];
+const ANVIL=[
+"..kkkkkkkkk.",
+".kmMMMMMMMmk",
+"..kmmmmmmmk.",
+"....kmmmk...",
+"....kiiik...",
+"...kiiiiik..",
+"..kiiiiiiik.",
+"..kkkkkkkkk."];
+const SIGN=[
+".kkkkkkk..",
+"kWWWWWWWk.",
+"kWwwWwwWWk",
+"kWWWWWWWk.",
+".kkkkkkk..",
+"....ww....",
+"....ww....",
+"....ww....",
+"....ww....",
+"....ww....",
+"....ww....",
+"...kwwk...",
+"...kkkk..."];
+const BARREL=["...kkkkkk...","..kWWWWWWk..",".kWlWWWWlWk.",".kiiiiiiiik.",".kWlWWWWwWk.","kWWlWWWWwWWk","kWWlWWWWwWWk","kWWlWWWWwWWk",".kWlWWWWwWk.",".kiiiiiiiik.",".kWwWWWWwWk.","..kwwwwwwk..","...kkkkkk..."];
+const CRATE=["kkkkkkkkkkkk","kllllllllllk","klwWWWWWWwlk","klWwWWWWwWlk","klWWwWWwWWlk","klWWWwwWWWlk","klWWWwwWWWlk","klWWwWWwWWlk","klWwWWWWwWlk","klwWWWWWWwlk","kwwwwwwwwwwk","kkkkkkkkkkkk"];
 const TORCH=[
 ["..y...",".yYy..",".yYYy.","oyYYyo","oyYyoo",".ooyo.","..ww..","..ww.."],
 ["...y..","..yYy.",".yYYy.","oyYYyo","ooyYyo",".oyoo.","..ww..","..ww.."],
@@ -576,6 +771,15 @@ function buildSprites(){
     bone:spr(ORB5,{a:'n',A:'B'}),purple:spr(ORB5,{a:'p',A:'P'}),red:spr(ORB5,{a:'e',A:'y'}),orange:spr(ORB5,{a:'o',A:'Y'}),big:spr(ORB7,{a:'r',A:'o'})};
   S.bcol={bolt1:'#5fd1b5',bolt2:'#5fd1b5',bolt3:'#5fd1b5',ally:'#2f8f83',bone:'#d9cfb4',purple:'#a678e0',red:'#c22a3a',orange:'#e8822e',big:'#e8822e'};
   S.icon={};for(const id in ITEMS)S.icon[id]=spr(ITEMS[id].art[0],ITEMS[id].art[1]);
+  /* the village: its people, its props, its ground */
+  S.vil={villager:{},hen:HEN.map(f=>{const c=spr(f);return {c:c,f:flipH(c)};}),tree:[spr(TREE),spr(TREE,{F:'h',f:'f'}),spr(TREE,{F:'f',f:'2'})],lantern:spr(LANTERN),well:spr(WELL),fire:FIRE.map(f=>spr(f)),stool:spr(STOOL),stele:spr(STELE),anvil:spr(ANVIL),sign:spr(SIGN),barrel:spr(BARREL),crate:spr(CRATE),
+    counter:genCounter(48),canopy:{ledger:genCanopy(80,PAL.R,PAL.b),post:genCanopy(80,PAL.i,PAL['5']),mint:genCanopy(80,PAL.g,PAL.w)},
+    house:{bank:genHouse(7,5,{stone:true,wall:'#6b6680',mortar:'#4c4660',roof:['#3b3d58','#454866','#5a5e80'],roofDark:'#2a2c40',door:3,win:[1,5],chim:1}),
+      cottage:genHouse(6,5,{timber:true,wall:'#cdbf9c',beam:'#5a3a24',roof:['#8f6b32','#a67c3c','#b8914a'],roofDark:'#6b4f24',door:2,win:[0,4],chim:4}),
+      cottage2:genHouse(5,4,{timber:true,wall:'#c4b38f',beam:'#5a3a24',roof:['#7d5c2a','#8f6b32','#a67c3c'],roofDark:'#5c441f',door:1,win:[3],chim:0})}};
+  for(const k in LOOKS){const m=LOOKS[k],ap=k==='gerrit';S.vil.villager[k]=[bundle(spr(ap?apron(VILLAGER_A):VILLAGER_A,m)),bundle(spr(ap?apron(VILLAGER_B):VILLAGER_B,m))];}
+  const r2=mulberry(0x1A57);
+  TILES.grass=[genGrass(r2,0),genGrass(r2,0),genGrass(r2,0),genGrass(r2,1),genGrass(r2,2)];TILES.path=[genPath(r2),genPath(r2)];TILES.cobble=[genCobble(r2),genCobble(r2)];
   const r=mulberry(77);
   TILES.floor=[genFloor(r,0),genFloor(r,0),genFloor(r,0),genFloor(r,1),genFloor(r,2)];
   TILES.face=[genFace(r),genFace(r)];TILES.top=genTop(r);
@@ -595,6 +799,48 @@ function genFace(r){const c=cv(16,16),g=c.getContext('2d');g.fillStyle=PAL['2'];
   g.fillStyle=PAL['1'];g.fillRect(0,15,16,1);return c;}
 function genTop(r){const c=cv(16,16),g=c.getContext('2d');g.fillStyle='#110f19';g.fillRect(0,0,16,16);
   for(let i=0;i<10;i++){g.fillStyle=PAL['1'];g.fillRect(r()*16|0,r()*16|0,2,1);}return c;}
+
+/* the village's ground: grass in three plain cuts, one with flowers and one worn; the lane; the square's cobbles */
+function genGrass(r,variant){const c=cv(16,16),g=c.getContext('2d');g.fillStyle='#3b6834';g.fillRect(0,0,16,16);
+  for(let i=0;i<14;i++){g.fillStyle=r()<.5?'#45783b':'#2f5529';g.fillRect(r()*16|0,r()*16|0,1,1+(r()*2|0));}
+  for(let i=0;i<4;i++){g.fillStyle=PAL.h;const x=r()*15|0,y=r()*14|0;g.fillRect(x,y,1,2);g.fillRect(x+1,y+1,1,1);}
+  if(variant===1){const cols=[PAL.B,PAL.y,PAL.P];for(let i=0;i<3;i++){g.fillStyle=cols[i];g.fillRect(r()*15|0,r()*15|0,1,1);}}
+  if(variant===2){g.fillStyle='#2f5529';for(let i=0;i<6;i++)g.fillRect(r()*16|0,r()*16|0,2,1);}
+  return c;}
+function genPath(r){const c=cv(16,16),g=c.getContext('2d');g.fillStyle='#5c4a31';g.fillRect(0,0,16,16);
+  for(let i=0;i<10;i++){g.fillStyle=r()<.5?'#6b5739':'#4e3e2a';g.fillRect(r()*16|0,r()*16|0,1+(r()*2|0),1);}
+  for(let i=0;i<3;i++){g.fillStyle='#7d6947';g.fillRect(r()*15|0,r()*15|0,2,1);}
+  return c;}
+function genCobble(r){const c=cv(16,16),g=c.getContext('2d');g.fillStyle='#403c4c';g.fillRect(0,0,16,16);
+  const stones=[[0,0,7,7],[8,0,7,7],[4,8,7,7],[12,8,4,7],[0,8,3,7]];
+  for(const s of stones){g.fillStyle=r()<.5?'#5a566a':'#635e72';g.fillRect(s[0],s[1],s[2],s[3]);g.fillStyle='#716c82';g.fillRect(s[0],s[1],s[2],1);}
+  for(let i=0;i<5;i++){g.fillStyle=r()<.6?'#36323f':PAL.h;g.fillRect(r()*16|0,r()*16|0,1,1);}
+  return c;}
+/* a counter to stand behind, an awning to stand under (with a lantern hung from its hem), and a house: a roof seen from
+   above, a face with a door and lit windows, a chimney. Lights are returned relative to the base's centre. */
+function genCounter(w){const c=cv(w,14),g=c.getContext('2d');
+  g.fillStyle=PAL.k;g.fillRect(0,0,w,14);g.fillStyle=PAL.l;g.fillRect(1,1,w-2,4);g.fillStyle=PAL.n;g.fillRect(2,1,w-4,1);g.fillStyle=PAL.W;g.fillRect(1,5,w-2,8);
+  g.fillStyle=PAL.w;for(let x=8;x<w-1;x+=8)g.fillRect(x,5,1,8);g.fillRect(1,9,w-2,1);g.fillStyle=PAL.k;g.fillRect(1,13,w-2,1);return c;}
+function genCanopy(w,A,B){const c=cv(w,32),g=c.getContext('2d');
+  g.fillStyle=PAL.k;g.fillRect(0,0,w,11);
+  for(let x=1,i=0;x<w-1;x+=8,i++){g.fillStyle=i%2?A:B;g.fillRect(x,1,Math.min(8,w-1-x),9);g.fillRect(x+1,10,6,1);g.fillRect(x+2,11,4,1);}
+  g.fillStyle='rgba(255,255,255,.14)';g.fillRect(1,1,w-2,1);
+  for(const x of [1,w-4]){g.fillStyle=PAL.k;g.fillRect(x-1,11,5,21);g.fillStyle=PAL.w;g.fillRect(x,11,3,20);g.fillStyle=PAL.W;g.fillRect(x,11,1,20);}
+  const lx=w>>1;g.fillStyle=PAL.k;g.fillRect(lx-3,11,6,9);g.fillStyle=PAL.i;g.fillRect(lx-2,12,4,7);g.fillStyle=PAL.Y;g.fillRect(lx-1,13,2,4);g.fillStyle=PAL.y;g.fillRect(lx-1,17,2,1);
+  return c;}
+function genHouse(wt,ht,st){const W=wt*16,H=ht*16,c=cv(W,H),g=c.getContext('2d'),fy=H-22,lights=[];
+  g.fillStyle=PAL.k;g.fillRect(0,0,W,fy+4);
+  for(let row=0;row*4+1<fy+3;row++){const y=row*4+1;g.fillStyle=st.roof[row&1];g.fillRect(1,y,W-2,Math.min(4,fy+3-y));g.fillStyle=st.roofDark;g.fillRect(1,y+3,W-2,1);
+    for(let x=(row&1?5:1);x<W-1;x+=8)g.fillRect(x,y,1,3);}
+  g.fillStyle=st.roof[2];g.fillRect(1,1,W-2,2);g.fillStyle='rgba(5,4,10,.5)';g.fillRect(1,fy,W-2,4);
+  if(st.chim!==undefined){const cx=st.chim*16+3;g.fillStyle=PAL.k;g.fillRect(cx-1,0,8,11);g.fillStyle=PAL['5'];g.fillRect(cx,1,6,9);g.fillStyle=PAL['6'];g.fillRect(cx,1,6,1);g.fillStyle=PAL.k;g.fillRect(cx+1,2,4,1);}
+  g.fillStyle=PAL.k;g.fillRect(0,fy+3,W,H-fy-3);g.fillStyle=st.wall;g.fillRect(1,fy+4,W-2,H-fy-5);
+  if(st.timber){g.fillStyle=st.beam;for(let x=1;x<W-1;x+=16)g.fillRect(x,fy+4,2,H-fy-5);g.fillRect(W-3,fy+4,2,H-fy-5);g.fillRect(1,fy+4,W-2,2);}
+  if(st.stone){g.fillStyle=st.mortar;for(let y=fy+9;y<H-1;y+=5)g.fillRect(1,y,W-2,1);for(let y=fy+4,k=0;y<H-1;y+=5,k++)for(let x=1+(k&1?6:0);x<W-1;x+=12)g.fillRect(x,y,1,5);}
+  g.fillStyle=PAL.k;g.fillRect(0,H-1,W,1);
+  if(st.door!==undefined){const dx=st.door*16+3;g.fillStyle=PAL.k;g.fillRect(dx-1,fy+6,12,H-fy-7);g.fillStyle=PAL.w;g.fillRect(dx,fy+7,10,H-fy-8);g.fillStyle=PAL.W;g.fillRect(dx+1,fy+8,8,1);g.fillRect(dx+4,fy+8,1,H-fy-9);g.fillStyle=PAL.G;g.fillRect(dx+7,fy+14,1,1);}
+  for(const wx of st.win){const x=wx*16+4;g.fillStyle=PAL.k;g.fillRect(x-1,fy+7,10,9);g.fillStyle=PAL.y;g.fillRect(x,fy+8,8,7);g.fillStyle=PAL.o;g.fillRect(x,fy+13,8,2);g.fillStyle=PAL.k;g.fillRect(x+3,fy+8,1,7);g.fillRect(x,fy+11,8,1);lights.push([x+4-W/2,fy+11-H]);}
+  return {cv:c,lights:lights,chim:st.chim!==undefined?[st.chim*16+6-W/2,1-H]:null};}
 
 /* ---------- map ---------- */
 let MW=128,MH=60,map,rooms,mapCv,torches;
@@ -621,9 +867,9 @@ function genMap(rng){
     if(near)map[yy*MW+xx]=2;}
   prerender(rng);
 }
-function prerender(rng,gate){
+function prerender(rng){
   mapCv=cv(MW*16,MH*16);const g=mapCv.getContext('2d');g.fillStyle=PAL.k;g.fillRect(0,0,mapCv.width,mapCv.height);torches=[];
-  const fl=v=>v===3?1:v,atf=(x,y)=>fl(at(x,y));   /* 3 = a Gatehouse thing: solid to walk, floor to draw; never in a dungeon map */
+  const fl=v=>v===3?1:v,atf=(x,y)=>fl(at(x,y));   /* 3 = a village desk: solid to walk, floor to draw; never in a dungeon map */
   for(let y=0;y<MH;y++)for(let x=0;x<MW;x++){const t=fl(map[y*MW+x]),px=x*16,py=y*16;
     if(t===1){{const fv=rng();g.drawImage(TILES.floor[fv<.86?(fv*30|0)%3:fv<.93?3:4],px,py);}
       if(at(x,y-1)===2){g.fillStyle='rgba(8,6,14,.45)';g.fillRect(px,py,16,3);g.fillStyle='rgba(8,6,14,.25)';g.fillRect(px,py+3,16,2);}}
@@ -635,7 +881,6 @@ function prerender(rng,gate){
         if(atf(x,y-1)===1)g.fillRect(px,py,16,2);
         if(atf(x-1,y)===1)g.fillRect(px,py,2,16);
         if(atf(x+1,y)===1)g.fillRect(px+14,py,2,16);}}}
-  if(gate){for(let y=0;y<MH;y++)for(let x=0;x<MW;x++){if(map[y*MW+x]!==1)continue;const q=rng();if(q<.03)g.drawImage(S.bone,x*16+3+(rng()*4|0),y*16+5+(rng()*5|0));}return;}
   /* the seal in the boss room */
   const br=rooms[5],bcx=(br.x+br.w/2)*16,bcy=(br.y+br.h/2)*16;
   for(let a=0;a<6.2832;a+=.004){for(const rr of [[104,72],[97,66]]){const X=Math.round(bcx+Math.cos(a)*rr[0]),Y=Math.round(bcy+Math.sin(a)*rr[1]);
@@ -815,7 +1060,12 @@ function useSkill(P,ix,iy,l,ax,ay){
     G.shake=Math.max(G.shake,2);puff(P.x,P.y-5,10,[PAL.T,'#ffffff'],1.2,14);}
 }
 function updateAlly(a){
-  const P=G.player,B=G.boss;let tgt=null,bd=150*150;
+  const P=G.player,B=G.boss;
+  if(G.gate){const D=G.door,onP=D.state==='shut'&&onPlate(P),road=P.x>31*16&&P.y>12*16&&P.y<19*16;
+    const tx=onP?D.px+16+(a.skin%2?-5:5):road?a.wx:a.hx,ty=onP?D.py+24+(a.skin-2)*14:road?a.wy:a.hy,dx=tx-a.x,dy=ty-a.y,d=Math.hypot(dx,dy);
+    if(d>(onP?2:3)){a.moving=true;tryMove(a,dx/d*58/60,dy/d*58/60);if(Math.abs(dx)>.3)a.face=dx<0?-1:1;}
+    else{a.moving=false;if(!road&&!onP)a.face=a.hf;}
+    if(a.flash>0)a.flash--;a.hp=a.max;return;}let tgt=null,bd=150*150;
   const far=!P.dead&&Math.hypot(P.x-a.x,P.y-a.y)>190;
   if(!far){for(const e of G.enemies){if(e.dead||!e.awake)continue;const d=(e.x-a.x)*(e.x-a.x)+(e.y-a.y)*(e.y-a.y);if(d<bd){bd=d;tgt=e;}}
     if(!B.dead&&B.awake){const d=(B.x-a.x)*(B.x-a.x)+(B.y-a.y)*(B.y-a.y);if(d<210*210&&(!tgt||d<bd)){tgt=B;bd=d;}}}
@@ -933,7 +1183,7 @@ function update(){
     updateBullets();
   }
   for(const b of G.bags){b.t++;if(Math.abs(b.vx)+Math.abs(b.vy)>.02){if(!solid(b.x+b.vx,b.y))b.x+=b.vx;else b.vx=-b.vx*.5;if(!solid(b.x,b.y+b.vy))b.y+=b.vy;else b.vy=-b.vy*.5;b.vx*=.92;b.vy*=.92;}}
-  for(let i=G.parts.length-1;i>=0;i--){const p=G.parts[i];p.x+=p.vx;p.y+=p.vy;p.vx*=.95;p.vy*=.95;if(--p.life<=0)G.parts.splice(i,1);}
+  for(let i=G.parts.length-1;i>=0;i--){const p=G.parts[i];p.x+=p.vx;p.y+=p.vy;if(p.d)p.x+=Math.sin(p.life*.09)*.12;else{p.vx*=.95;p.vy*=.95;}if(--p.life<=0)G.parts.splice(i,1);}
   for(let i=G.texts.length-1;i>=0;i--){const t=G.texts[i];t.y-=.32;if(--t.life<=0)G.texts.splice(i,1);}
   if(G.portalAt&&G.tick===G.portalAt){G.portal={x:G.boss.hx,y:G.boss.hy};log('The seal opens. Stand on it to extract.');}
   if(G.state==='dead'&&G.tick-G.deadAt===80)showDeath();
@@ -979,7 +1229,7 @@ function showDeath(){
   const ul=$('ovList');ul.textContent='';let p=0;
   G.rolls.forEach((r,i)=>{if(r.pool)p++;ul.append(fateRow(S.icon[r.item.d.id],r.item.d.name,r.pool?'To the pool':'Burned',r.pool?'pool':'burn',i));});
   $('ovNote').textContent=(G.rolls.length-p)+' burned for good. '+p+' returned to the pool for whoever finishes the boss.'+(carried.length?' The '+carried.length+' you were carrying stay where they fell.':'')+(G.pouch?' '+G.pouch+(G.pouch===1?' potion':' potions')+' lost.':'');
-  const b=$('ovBtn');b.textContent='Back to the Gatehouse';b.hidden=false;$('ovClose').hidden=true;$('ovBody').textContent='';
+  const b=$('ovBtn');b.textContent='Back to Lastlight';b.hidden=false;$('ovClose').hidden=true;$('ovBody').textContent='';
   b.onclick=function(){ROLL.unshift({seed:G.seed,tick:G.tick,by:KILLERS[G.hitBy]||'the dark',items:G.rolls.map(r=>({item:r.item,pool:r.pool})),carried:carried.length,pots:G.pouch});
     wager=[null,null,null,null,null];carried=[];nextSeed=G.seed*1664525+1013904223;enterGate();canvas.focus();};
   ov.hidden=false;
@@ -990,8 +1240,8 @@ function extract(){
   const ul=$('ovList');ul.textContent='';let i=0;
   for(const it of carried)ul.append(fateRow(S.icon[it.d.id],it.d.name,'Vaulted','keep',i++));
   for(const it of wager){if(!it)continue;const w=6+((G.rng()*7)|0);it.dur=Math.max(0,it.dur-w);ul.append(fateRow(S.icon[it.d.id],it.d.name,'-'+w+' wear','wear',i++));}
-  $('ovNote').textContent='What you carried goes to the strongbox'+(G.pouch?', with the '+G.pouch+(G.pouch===1?' potion':' potions')+' in your pouch':'')+'; the best piece you own in each slot is fettered for the next delve. Better gear, more to lose.';
-  const b=$('ovBtn');b.textContent='Back to the Gatehouse';b.hidden=false;$('ovClose').hidden=true;$('ovBody').textContent='';
+  $('ovNote').textContent='What you carried goes to the Counting House'+(G.pouch?', with the '+G.pouch+(G.pouch===1?' potion':' potions')+' in your pouch':'')+'; the best piece you own in each slot is fettered for the next delve. Better gear, more to lose.';
+  const b=$('ovBtn');b.textContent='Back to Lastlight';b.hidden=false;$('ovClose').hidden=true;$('ovBody').textContent='';
   b.onclick=function(){vault.push(...carried);carried=[];stock+=G.pouch;nextSeed=G.seed*1664525+1013904223;enterGate();const n=fetterBest();if(n)log('Fettered the best piece you own in each slot.');canvas.focus();};
   log('You extract with '+carried.length+' pieces.');ov.hidden=false;hudDirty=true;
 }
@@ -1005,59 +1255,144 @@ function recallOut(){
   const keptPots=Math.min(G.pouch,G.brought);   /* what you brought is saved; what you picked up is left */
   $('ovNote').textContent=(n?n+' left for whoever breaks the Turnkey. ':'')+'Only the seal lets you walk out with loot. Recall saves what you wagered and nothing else'+(keptPots?' — the '+keptPots+(keptPots===1?' potion':' potions')+' you brought come back with you':'')+(G.pouch>keptPots?'; the '+(G.pouch-keptPots)+' you found stay':'')+'.';
   carried=[];G.player.recall=0;puff(G.player.x,G.player.y-6,30,[PAL.T,'#ffffff'],1.6,30);
-  const b=$('ovBtn');b.textContent='Back to the Gatehouse';b.hidden=false;$('ovClose').hidden=true;$('ovBody').textContent='';
+  const b=$('ovBtn');b.textContent='Back to Lastlight';b.hidden=false;$('ovClose').hidden=true;$('ovBody').textContent='';
   b.onclick=function(){stock+=keptPots;nextSeed=G.seed*1664525+1013904223;enterGate();canvas.focus();};
   log('You recall. '+n+' left behind.');ov.hidden=false;hudDirty=true;
 }
 
-/* ---------- the Gatehouse ---------- */
-/* One room in front of the dungeon (SPEC §2 "The hub"): no combat, no loot, and off the run's RNG, so a seed's dungeon
-   does not move. Six things to walk up to, each a panel over what would be a chain call: the Strongbox (what you hold,
-   safe), the Fettering post (what you wager), the Ledger (the exchange: not built), the Door (the shard forms on its
-   plate), the Roll of the Forgotten (this session's deaths, by name) and the Mint (a tier-I set; placeholder prices). */
-const GATE_W=24,GATE_H=14;
-const GATE_OBJECTS=[
-  {id:'strongbox',name:'Strongbox',tx:3,ty:1,spr:'chest'},
-  {id:'post',name:'Fettering post',tx:8,ty:1,spr:'pillar'},
-  {id:'ledger',name:'Ledger',tx:13,ty:1,spr:'bookshelf'},
-  {id:'roll',name:'Roll of the Forgotten',tx:18,ty:1,spr:'banner'},
-  {id:'mint',name:'The Mint',tx:4,ty:11,spr:'brazier'},
-  {id:'door',name:'The shard door',tx:22,ty:7,spr:null}];
+/* ---------- the village: Lastlight ---------- */
+/* The hub is a village outside the dungeon (SPEC §2, operator 2026-10-22), not a room in front of it: no combat, no loot,
+   and off the run's RNG, so a seed's dungeon does not move. Six desks keep the Gatehouse's jobs, each a person behind a
+   counter and a panel over what would be a chain call: the Counting House (the strongbox: what you hold, safe), the
+   Fettering Post (what you wager), the Exchange (the ledger: not built), the Roll of the Forgotten (this session's deaths,
+   by name), the Mint (a tier-I set; placeholder prices) and, at the end of the road east, the Gaol gate (the shard forms on
+   its plate). The rest - the well, the fire, the cottages, the hens - is the village being a place to come back to. Its
+   name, its people, their names and its shape are placeholders. */
+const VW=48,VH=30;
+const VILLAGE_OBJECTS=[
+  {id:'strongbox',name:'The Counting House',tx:8,ty:8,nw:32,h:46,use:[8,9],npc:{name:'Ashby',look:'ashby',tx:8,ty:7,line:'Your things are safe with me. Nothing on these shelves can be lost.'}},
+  {id:'post',name:'The Fettering Post',tx:35,ty:23,nw:32,h:46,use:[35,24],npc:{name:'Gerrit',look:'gerrit',tx:35,ty:22,line:'Choose what you wear through the gate. It is fettered to you once the shard forms, and the dark keeps what it takes.'}},
+  {id:'ledger',name:'The Exchange',tx:35,ty:6,nw:32,h:46,use:[35,7],npc:{name:'Ione',look:'ione',tx:36,ty:5,line:'Offers to buy, offers to sell, matched by the contract. The book is empty tonight: there is no exchange in this slice.'}},
+  {id:'roll',name:'The Roll of the Forgotten',tx:23.5,ty:7,nw:28,h:46,use:[24,8],npc:{name:'Tobin',look:'tobin',tx:21,ty:8,line:'Every name that went through the gate and did not come back. I keep the candles lit.'}},
+  {id:'mint',name:'The Mint',tx:11,ty:21,nw:32,h:46,use:[11,22],npc:{name:'Quill',look:'quill',tx:11,ty:20,line:'Token and ETH into the fire, a tier-I set out of it. The token is gone for good; the ETH buys what the bosses drop.'}},
+  {id:'door',name:'The Gaol gate',tx:44,ty:15,nw:44,h:48,use:null,npc:{name:'Maud',look:'maud',tx:43,ty:12,line:'Stand on the plate. Three seconds, and whoever is on it goes in together. Nobody follows.'}}];
 const KILLERS={forgotten:'one of the Forgotten',shade:'a Shade',gaoler:'a Gaoler',turnkey:'the Turnkey'};
 const COARSE=!!(window.matchMedia&&window.matchMedia('(pointer: coarse)').matches);
+const PEN={x0:3*16+3,y0:19*16+3,x1:7*16-3,y1:21*16-3};   /* where the hens are kept, in pixels */
 let vault=[],ROLL=[],nextSeed=0x0B11E77E,gateRng=mulberry(0x6A7E),panel=null,useHit=false,gateVisits=0;
-function gateMap(){MW=GATE_W;MH=GATE_H;map=new Uint8Array(MW*MH);map.fill(2);rooms=[];
-  for(let y=1;y<=12;y++)for(let x=1;x<=21;x++)map[y*MW+x]=1;
-  for(let y=6;y<=8;y++){map[y*MW+22]=1;map[y*MW+23]=1;}
-  for(const o of GATE_OBJECTS)if(o.spr)map[o.ty*MW+o.tx]=3;}
+let terrain=null,scenery=[],villagers=[],hens=[];
+/* Everything that stands in the village: a kind, a base (x centre, y bottom, in pixels), the tiles it makes solid, and
+   for the few things that sit on something else a sort key apart from where they are drawn (oy: the drawn bottom is at
+   y+oy). Desks are solid as 3, so the dungeon's wall rules never see them. */
+function villageScenery(){
+  const L=[];const put=(k,tx,ty,o)=>{const e=Object.assign({k:k,x:(tx+.5)*16,y:(ty+1)*16,oy:0},o||{});L.push(e);return e;};
+  const jit=(tx,ty)=>((tx*7+ty*13)%3)-1;
+  /* the wood round the village, the outer ring in shadow */
+  for(let x=0;x<44;x++)for(const y of [0,VH-1])put('tree',x,y,{v:(x*3+y)%3,x:(x+.5)*16+jit(x,y),foot:[x,y,1,1]});
+  for(let y=1;y<VH-1;y++)put('tree',0,y,{v:(y*5)%3,x:8+jit(0,y),foot:[0,y,1,1]});
+  for(const t of [[14,2],[16,4],[13,5],[19,2],[21,3],[27,2],[29,4],[31,2],[20,6],[40,3],[42,2],[39,8],[42,9],[40,11],[40,20],[42,22],[42,18],[3,24],[5,26],[8,25],[12,26],[15,25],[19,27],[29,27],[33,27],[36,26],[1,5],[2,3],[9,12],[10,15],[1,23],[2,27],[1,15],[1,9],[2,7]])
+    put('tree',t[0],t[1],{v:(t[0]+t[1])%2,x:(t[0]+.5)*16+jit(t[0],t[1]),foot:[t[0],t[1],1,1]});
+  /* the Counting House and two cottages, their windows lit */
+  for(const h of [['bank',5,2],['cottage',2,11],['cottage2',38,25]]){const H=S.vil.house[h[0]],wt=H.cv.width/16,ht=H.cv.height/16;
+    L.push({k:'house',cv:H.cv,x:(h[1]+wt/2)*16,y:(h[2]+ht)*16,oy:0,lights:H.lights,chim:H.chim,foot:[h[1],h[2],wt,ht]});}
+  /* the desks: the bank's counter under its windows; three awnings with a counter each */
+  put('counter',8,8,{foot:[7,8,3,1],desk:true});put('chest',8,8,{y:8*16+17,oy:-9});
+  put('barrel',6,7,{foot:[6,7,1,1]});put('crate',10,7,{foot:[10,7,1,1]});put('crate',5,7,{foot:[5,7,1,1]});
+  put('canopy',35,4,{c:'ledger',foot:[33,4,5,1]});put('bookshelf',34,5,{foot:[34,5,1,1]});put('counter',35,6,{foot:[34,6,3,1],desk:true});
+  put('none',33,5,{foot:[33,5,1,1]});put('none',37,5,{foot:[37,5,1,1]});put('barrel',32,6,{foot:[32,6,1,1]});put('crate',38,6,{foot:[38,6,1,1]});
+  put('canopy',11,19,{c:'mint',foot:[9,19,5,1]});put('counter',11,21,{foot:[10,21,3,1],desk:true});put('brazier',13,20,{foot:[13,20,1,1],chim:[0,-13]});
+  put('none',9,20,{foot:[9,20,1,1]});put('barrel',8,21,{foot:[8,21,1,1]});put('crate',14,21,{foot:[14,21,1,1]});
+  put('canopy',35,21,{c:'post',foot:[33,21,5,1]});put('counter',35,23,{foot:[34,23,3,1],desk:true});put('anvil',35,23,{y:23*16+17,oy:-9});put('pillar',38,22,{foot:[38,22,1,1]});
+  put('none',33,22,{foot:[33,22,1,1]});put('none',37,22,{foot:[37,22,1,1]});put('crate',32,23,{foot:[32,23,1,1]});
+  /* the Roll: a stone at the top of the square, its keeper on a stool beside it */
+  put('stele',23.5,7,{foot:[23,7,2,1]});put('stool',21,8,{y:8*16+6,oy:2});
+  /* the well in the square; the fire below it with three seats */
+  put('well',23.5,14,{foot:[23,13,2,2]});
+  put('fire',24,24,{foot:[24,24,1,1],chim:[0,-11]});for(const s of [[22.5,25.3],[26.5,25.3],[24.5,26.5]])put('stool',s[0]-.5,s[1],{y:s[1]*16-2,oy:4});
+  /* lanterns at the corners and along the road; a signpost where the road leaves the square */
+  for(const p of [[12,8],[26,8],[16,10],[31,10],[16,19],[31,19],[34,13],[38,13],[34,17],[38,17],[14,21],[31,23],[8,18]])put('lantern',p[0],p[1],{foot:[p[0],p[1],1,1]});
+  put('sign',32,17,{foot:[32,17,1,1]});
+  return L;
+}
+function villageMap(){
+  MW=VW;MH=VH;map=new Uint8Array(MW*MH);map.fill(1);terrain=new Uint8Array(MW*MH);rooms=[];
+  const T=(x0,y0,x1,y1,t)=>{for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++)terrain[y*MW+x]=t;};
+  const W=(x0,y0,x1,y1,t)=>{for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++)map[y*MW+x]=t;};
+  T(17,10,30,19,2);T(22,8,25,9,2);                     /* the square, and the paving before the Roll */
+  T(31,14,43,16,1);                                   /* the road east to the gate */
+  T(8,9,20,9,1);T(20,9,20,10,1);                      /* the lane to the Counting House */
+  T(28,8,35,8,1);T(35,7,35,8,1);                      /* to the Exchange */
+  T(11,22,17,22,1);T(17,19,17,22,1);                  /* to the Mint */
+  T(30,19,30,24,1);T(30,24,35,24,1);                  /* to the Fettering Post */
+  T(24,20,24,23,1);                                   /* down to the fire */
+  T(4,16,16,16,1);T(4,16,4,17,1);                     /* the cottage lane, and down to the hens */
+  T(45,14,47,16,3);                                   /* the Gaol's own flagstones beyond the gate */
+  W(44,0,47,VH-1,2);W(44,14,47,16,1);                 /* the gaol wall, and the gateway through it */
+  for(let x=2;x<=7;x++){if(x!==4&&x!==5)map[18*MW+x]=2;map[21*MW+x]=2;}for(let y=19;y<=20;y++){map[y*MW+2]=2;map[y*MW+7]=2;}   /* the hen pen */
+  scenery=villageScenery();
+  for(const e of scenery)if(e.foot){const f=e.foot;for(let y=f[1];y<f[1]+f[3];y++)for(let x=f[0];x<f[0]+f[2];x++)map[y*MW+x]=e.desk?3:2;}
+  scenery.sort((a,b)=>a.y-b.y);
+}
+function villagePrerender(rng){
+  mapCv=cv(MW*16,MH*16);const g=mapCv.getContext('2d');g.fillStyle=PAL.k;g.fillRect(0,0,mapCv.width,mapCv.height);torches=[];
+  const tr=(x,y)=>(x<0||y<0||x>=MW||y>=MH)?0:terrain[y*MW+x];
+  for(let y=0;y<MH;y++)for(let x=0;x<MW;x++){const px=x*16,py=y*16,m=map[y*MW+x],t=terrain[y*MW+x];
+    if(m===2&&x>=44){   /* the gaol wall: brick on the village side, dark stone behind, torches either side of the gate */
+      if(x===44){g.drawImage(TILES.face[(x+y)&1],px,py);if(y===4||y===12||y===18||y===26)torches.push({x:px+8,y:py+8,ph:(y*17)%64});}
+      else g.drawImage(TILES.top,px,py);continue;}
+    if(t===3){g.drawImage(TILES.floor[(x+y)%3],px,py);g.fillStyle='rgba(13,11,20,'+Math.min(.92,.3+(x-45)*.3)+')';g.fillRect(px,py,16,16);continue;}
+    const q=rng();
+    if(t===2)g.drawImage(TILES.cobble[q<.5?0:1],px,py);
+    else if(t===1){g.drawImage(TILES.path[q<.5?0:1],px,py);
+      for(const d of [[0,-1],[0,1],[-1,0],[1,0]]){if(tr(x+d[0],y+d[1])!==0||at(x+d[0],y+d[1])!==1)continue;g.fillStyle=rng()<.5?'#3b6834':'#45783b';   /* grass creeping onto the lane's edge */
+        for(let i=0;i<4;i++){const u=rng()*14|0,v=rng()*2|0;if(d[1]<0)g.fillRect(px+u,py+v,2,1);else if(d[1]>0)g.fillRect(px+u,py+14+v,2,1);else if(d[0]<0)g.fillRect(px+v,py+u,1,2);else g.fillRect(px+14+v,py+u,1,2);}}}
+    else g.drawImage(TILES.grass[q<.8?(q*30|0)%3:q<.92?3:4],px,py);}
+  g.fillStyle='#2a2735';   /* the square's kerb */
+  for(let y=0;y<MH;y++)for(let x=0;x<MW;x++){if(tr(x,y)!==2)continue;const px=x*16,py=y*16;
+    if(tr(x,y-1)===0)g.fillRect(px,py,16,1);if(tr(x,y+1)===0)g.fillRect(px,py+15,16,1);if(tr(x-1,y)===0)g.fillRect(px,py,1,16);if(tr(x+1,y)===0)g.fillRect(px+15,py,1,16);}
+  /* the hen pen: rails and posts */
+  const post=(px,py)=>{g.fillStyle=PAL.k;g.fillRect(px-2,py-11,5,13);g.fillStyle=PAL.W;g.fillRect(px-1,py-10,3,11);g.fillStyle=PAL.l;g.fillRect(px-1,py-10,3,1);g.fillStyle=PAL.w;g.fillRect(px+1,py-9,1,10);};
+  for(let x=2;x<=7;x++)for(const y of [18,21]){if(y===18&&(x===4||x===5))continue;const px=x*16,py=y*16;
+    g.fillStyle=PAL.k;g.fillRect(px,py+3,16,3);g.fillRect(px,py+9,16,3);g.fillStyle=PAL.W;g.fillRect(px,py+4,16,1);g.fillRect(px,py+10,16,1);g.fillStyle=PAL.w;g.fillRect(px,py+5,16,1);g.fillRect(px,py+11,16,1);}
+  for(let y=19;y<=20;y++)for(const x of [2,7]){const px=x*16,py=y*16;
+    g.fillStyle=PAL.k;g.fillRect(px+5,py,3,16);g.fillRect(px+10,py,3,16);g.fillStyle=PAL.W;g.fillRect(px+6,py,1,16);g.fillRect(px+11,py,1,16);g.fillStyle=PAL.w;g.fillRect(px+7,py,1,16);g.fillRect(px+12,py,1,16);}
+  for(let x=2;x<=7;x++)for(const y of [18,21]){if(y===18&&(x===4||x===5))continue;post(x*16+8,y*16+14);}
+  for(const x of [2,7])post(x*16+8,21*16+14);
+}
 function refreshStats(){G.st=stats();if(G.gate)G.player.hp=G.st.maxhp;hudDirty=true;}
 function mintSet(first){const set=[mk('wand1',gateRng),mk('robe1',gateRng),mk('ring1',gateRng)];
   for(const it of set){const s=it.d.slot;if(!wager[s])wager[s]=it;else vault.push(it);}
-  if(!first)log('Minted a tier-I set: 120 token + 0.002 ETH burned. Placeholder amounts.');refreshStats();}
+  if(!first)log('Quill mints a tier-I set: 120 token + 0.002 ETH burned. Placeholder amounts.');refreshStats();}
 function fetterBest(){let n=0;for(let s=0;s<4;s++){let best=wager[s],bi=-1;
     vault.forEach((it,i)=>{if(it.d.slot===s&&(!best||it.d.tier>best.d.tier||(it.d.tier===best.d.tier&&it.dur>best.dur))){best=it;bi=i;}});
     if(bi>=0){if(wager[s])vault.push(wager[s]);wager[s]=vault.splice(bi,1)[0];n++;}}
   refreshStats();return n;}
 function swapSlot(s){const i=vault.findIndex(it=>it.d.slot===s);if(i<0)return;const next=vault.splice(i,1)[0];if(wager[s])vault.push(wager[s]);wager[s]=next;refreshStats();}
 function keepSafe(s){if(!wager[s])return;vault.push(wager[s]);wager[s]=null;refreshStats();}
-function startDelve(){log('The shard forms: four delvers. The door seals.');newRun(nextSeed);}
+function startDelve(){log('The shard forms: four delvers. The gate opens for them and seals behind them.');newRun(nextSeed);}
 function enterGate(){
-  gateMap();prerender(mulberry(0x6A7E0),true);
-  const sx=11.5*16,sy=7.5*16;
-  const door={x:22,y0:6,y1:8,px:20*16,py:6*16,pw:32,ph:48,open:false,state:'shut',t:0,n:0,through:0,hinted:true};
+  villageMap();villagePrerender(mulberry(0x6A7E0));
+  const sx=24.5*16,sy=18.5*16;
+  const door={x:44,y0:14,y1:16,px:42*16,py:14*16,pw:32,ph:48,open:false,state:'shut',t:0,n:0,through:0,hinted:true};
   G={seed:nextSeed,rng:gateRng,tick:0,state:'gate',gate:true,bullets:[],bags:[],parts:[],texts:[],graves:[],enemies:[],allies:[],log:[],pool:0,
      shake:0,flash:0,locked:false,nag:0,portal:null,portalAt:0,cam:{x:sx,y:sy},camx:0,camy:0,st:stats(),rolls:null,deadAt:0,full:0,door:door,near:null,hitBy:null,
      boss:{x:0,y:0,hx:0,hy:0,hw:0,hh:0,hp:0,max:1,hr:0,t:0,a:0,ph:1,awake:false,dead:true,flash:0,face:1}};
-  G.player={x:sx,y:sy,hw:4,hh:3,hp:G.st.maxhp,face:1,cd:0,flash:0,moving:false,skin:0,dead:false,name:'You',scd:0,scdMax:1,dash:0,ddx:0,ddy:0,recall:0,rlock:0};
-  const off=[[-16,-10],[14,-12],[-4,16]],spots=[[17,10],[19,11],[16,12]];
-  for(let i=0;i<3;i++)G.allies.push({x:(spots[i][0]+.5)*16,y:(spots[i][1]+.5)*16,ox:off[i][0]*1.4,oy:off[i][1]*1.4,hw:4,hh:3,hp:80,max:80,face:-1,cd:20,flash:0,
+  /* walk boxes here are the sprite's own width (the dungeon's are the hit box): a body never overlaps what it cannot walk into, so nothing is drawn through anything */
+  G.player={x:sx,y:sy,hw:7,hh:4,hp:G.st.maxhp,face:1,cd:0,flash:0,moving:false,skin:0,dead:false,name:'You',scd:0,scdMax:1,dash:0,ddx:0,ddy:0,recall:0,rlock:0};
+  /* the other three sit at the fire, walk to the gate when you take the road, and step onto the plate when you do */
+  const off=[[-16,-10],[14,-12],[-4,16]],home=[[22.5,25.3,1],[26.5,25.3,-1],[24.5,26.5,1]],wait=[[40.5,14.2],[40.5,16.8],[41.5,15.5]];
+  for(let i=0;i<3;i++)G.allies.push({x:home[i][0]*16,y:home[i][1]*16,hx:home[i][0]*16,hy:home[i][1]*16,hf:home[i][2],wx:wait[i][0]*16,wy:wait[i][1]*16,ox:off[i][0]*1.4,oy:off[i][1]*1.4,hw:7,hh:4,hp:80,max:80,face:home[i][2],cd:20,flash:0,
     moving:false,skin:i+1,dead:false,name:NAMES[i],dir:i%2?1:-1,dmg:8,skill:.55+i*.2});
+  for(const o of VILLAGE_OBJECTS){const n=o.npc;n.x=(n.tx+.5)*16;n.y=(n.ty+.5)*16;n.face=1;n.vil=true;n.moving=false;}
+  villagers=[{look:'hob',x:20.5*16,y:12.5*16,hw:7,hh:4,face:1,moving:false,wp:[[20,12],[27,12],[27,17],[20,17]],i:1,wait:40},
+    {look:'nell',x:10.5*16,y:16.5*16,hw:7,hh:4,face:1,moving:false,wp:[[5,16],[10,16],[16,16],[19,15],[16,16],[10,16]],i:2,wait:120}];
+  hens=[];for(let i=0;i<3;i++)hens.push({x:PEN.x0+10+i*22,y:PEN.y0+8+(i%2)*14,tx:0,ty:0,face:i%2?-1:1,wait:30+i*25,peck:0,moving:false});
   carried=[];skillHit=false;useHit=false;panel=null;
   if(!wager[4]||wager[4].d.skill!==skillSel)wager[4]={d:ITEMS[SKILLIDS[skillSel]],dur:90};
-  if(++gateVisits===1){mintSet(true);stock+=2;log('The Gatehouse. A tier-I set and two potions are minted for you; the Mint sells more. Nothing is at risk until the door seals.');}
-  else log('The Gatehouse. Nothing is at risk here.'+(wager.slice(0,4).some(Boolean)?'':' Nothing fettered: the Mint sells a tier-I set.'));
+  if(++gateVisits===1){mintSet(true);stock+=2;log('Lastlight, the village at the Gaol\'s gate. Quill has minted you a tier-I set and two potions; the road east leads to the gate. Nothing is at risk until the shard forms.');}
+  else log('Lastlight. Nothing is at risk here.'+(wager.slice(0,4).some(Boolean)?'':' Nothing fettered: Quill sells a tier-I set.'));
   refreshStats();
-  const h=$('hint');h.textContent=(touchMode||COARSE)?'Drag to walk · tap a thing to use it':'WASD to walk · Space to use a thing · 1 2 3 your skill';h.classList.remove('off');
+  const h=$('hint');h.textContent=(touchMode||COARSE)?'Drag to walk · tap a desk to talk':'WASD to walk · Space to talk at a desk · the road east leads to the gate';h.classList.remove('off');
   const ov=$('overlay');ov.hidden=true;ov.className='overlay';hudDirty=true;
 }
 function updateGatePlayer(P){
@@ -1067,11 +1402,35 @@ function updateGatePlayer(P){
   if(P.moving){const sp=WALK/60*Math.min(1,touch?l:1);tryMove(P,ix/l*sp,iy/l*sp);if(Math.abs(ix)>.2)P.face=ix<0?-1:1;}
   if(P.flash>0)P.flash--;P.hp=G.st.maxhp;
   let near=null,bd=1e9;
-  for(const o of GATE_OBJECTS){const ax=(o.tx+.5)*16,ay=(o.ty+.5)*16,dx=Math.abs(P.x-ax),dy=Math.abs(P.y-ay);if(dx<24&&dy<24&&dx+dy<bd){bd=dx+dy;near=o;}}
+  for(const o of VILLAGE_OBJECTS){const ax=(o.tx+.5)*16,ay=(o.ty+.5)*16,dx=Math.abs(P.x-ax),dy=Math.abs(P.y-ay);if(dx<o.nw&&dy<28&&dx+dy<bd){bd=dx+dy;near=o;}}
   G.near=near;
   if((skillHit||useHit)&&!panel&&near)openPanel(near.id);
   skillHit=useHit=false;
+  updateVillage();
 }
+function updateVillage(){
+  const P=G.player,t=G.tick;
+  for(const v of villagers){   /* the two who walk: round the square, and the lane to the square and back */
+    if(v.wait>0){v.wait--;v.moving=false;continue;}
+    const w=v.wp[v.i],tx=(w[0]+.5)*16,ty=(w[1]+.5)*16,dx=tx-v.x,dy=ty-v.y,d=Math.hypot(dx,dy);
+    if(d<2){v.i=(v.i+1)%v.wp.length;v.wait=60+((t*7+v.i*131)%150);v.moving=false;continue;}
+    v.moving=true;if(Math.abs(dx)>.3)v.face=dx<0?-1:1;tryMove(v,dx/d*.6,dy/d*.6);}
+  for(const h of hens){   /* peck about the pen; scatter from whoever comes in */
+    const near=Math.hypot(P.x-h.x,P.y-h.y);
+    if(near<26){const d=near||1;h.tx=h.x+(h.x-P.x)/d*30;h.ty=h.y+(h.y-P.y)/d*30;h.wait=0;h.peck=0;}
+    if(h.wait>0){h.wait--;h.moving=false;h.peck=h.wait<14?1:0;continue;}
+    if(h.tx===0){h.tx=PEN.x0+Math.random()*(PEN.x1-PEN.x0);h.ty=PEN.y0+Math.random()*(PEN.y1-PEN.y0);}
+    const dx=h.tx-h.x,dy=h.ty-h.y,d=Math.hypot(dx,dy);
+    if(d<1.5){h.tx=0;h.wait=40+Math.random()*120;h.moving=false;continue;}
+    const sp=near<26?1.1:.35;h.x=Math.max(PEN.x0,Math.min(PEN.x1,h.x+dx/d*sp));h.y=Math.max(PEN.y0,Math.min(PEN.y1,h.y+dy/d*sp));if(Math.abs(dx)>.3)h.face=dx<0?-1:1;h.moving=true;h.peck=0;}
+  if(RM)return;
+  /* chimney smoke, and fireflies over whatever grass is in view */
+  for(const e of scenery){if(!e.chim||t%6!==(e.x|0)%6)continue;G.parts.push({x:e.x+e.chim[0]+Math.random()*2,y:e.y+e.chim[1],vx:.1+Math.random()*.12,vy:-.28-Math.random()*.1,life:70+Math.random()*40,col:Math.random()<.5?'#4c4660':'#6b6680',s:2,d:1});}
+  if(Math.random()<.14){const x=G.camx+Math.random()*buf.width,y=G.camy+Math.random()*buf.height,tx=x>>4,ty=y>>4;
+    if(at(tx,ty)===1&&terrain[ty*MW+tx]===0)G.parts.push({x:x,y:y,vx:(Math.random()-.5)*.1,vy:-.04,life:18+Math.random()*30,col:Math.random()<.5?'#d8f08a':PAL.H,s:1,d:1});}
+}
+function sceneryCv(e,t){switch(e.k){case 'tree':return S.vil.tree[e.v];case 'house':return e.cv;case 'canopy':return S.vil.canopy[e.c];
+  case 'chest':case 'pillar':case 'bookshelf':return S.gate[e.k];case 'brazier':return S.gate.brazier[(t>>3)&1];case 'fire':return S.vil.fire[(t>>3)&1];case 'none':return null;default:return S.vil[e.k];}}
 function kitRow(it,stampText,cls,meta){const li=el('li',it?'t'+it.d.tier:'empty');li.style.setProperty('--i',0);
   const ic=el('div','ico');if(it)ic.append(iconEl(S.icon[it.d.id],2));
   const body=el('div');body.append(el('span','nm',it?it.d.name:'Nothing'),el('span','meta',meta));
@@ -1079,17 +1438,17 @@ function kitRow(it,stampText,cls,meta){const li=el('li',it?'t'+it.d.tier:'empty'
 function openPanel(id){
   panel=id;const ov=$('overlay'),ul=$('ovList'),body=$('ovBody'),note=$('ovNote'),btn=$('ovBtn'),cl=$('ovClose');
   ov.className='overlay gate';ul.textContent='';body.textContent='';note.textContent='';note.className='';btn.hidden=true;cl.hidden=false;cl.onclick=closePanel;
-  const o=GATE_OBJECTS.find(x=>x.id===id);$('ovTitle').textContent=o.name;
+  const o=VILLAGE_OBJECTS.find(x=>x.id===id);$('ovTitle').textContent=o.name;$('ovSub').textContent=o.npc.name+': \u201C'+o.npc.line+'\u201D';
   const fettered=wager.slice(0,4).filter(Boolean);
-  if(id==='strongbox'){$('ovSub').textContent='What you hold. Nothing in here can be lost.';const kit=el('ul','kit');let n=0;
+  if(id==='strongbox'){const kit=el('ul','kit');let n=0;
     for(let s=0;s<4;s++)if(wager[s]){n++;kit.append(kitRow(wager[s],'Fettered','keep',SLOTS[s]+' · tier '+ROMAN[wager[s].d.tier]+' · at risk once the door seals'));}
     for(const it of vault){n++;kit.append(kitRow(it,'Safe','pool',SLOTS[it.d.slot]+' · tier '+ROMAN[it.d.tier]+' · '+it.dur+'% sound'));}
     {const li=el('li',stock?'':'empty');li.style.setProperty('--i',0);const ic=el('div','ico');ic.append(iconEl(S.flask,2));const body2=el('div');
       body2.append(el('span','nm','Potions'),el('span','meta',stock?stock+' in the strongbox · up to '+POUCH+' come with you':'none · the Mint sells them, the Turnkey drops them'));
       li.append(ic,body2);if(stock){li.append(el('span','stamp pool','Safe'));n++;}kit.append(li);}
-    if(n)body.append(kit);else body.append(el('p','','Empty. The Mint sells a tier-I set, and what you extract lands here.'));
+    if(n)body.append(kit);else body.append(el('p','','Empty. Quill at the Mint sells a tier-I set, and what you extract lands here.'));
     note.textContent='The vault is the wallet: a piece is at risk only inside a run.';}
-  else if(id==='post'){$('ovSub').textContent='Choose what you wager. It locks when the door seals.';const kit=el('ul','kit');
+  else if(id==='post'){const kit=el('ul','kit');
     for(let s=0;s<4;s++){const it=wager[s],spares=vault.filter(x=>x.d.slot===s).length;
       const li=kitRow(it,null,null,it?SLOTS[s]+' · tier '+ROMAN[it.d.tier]+' · '+it.dur+'% sound':SLOTS[s]+(spares?' · '+spares+' in the strongbox':' · none owned'));
       const acts=el('div','acts');
@@ -1101,22 +1460,21 @@ function openPanel(id){
     body.append(el('p','','One skill per delve, a wagered item like the rest. Minting it is free here.'),sk);
     if(vault.length){const b=el('button','quiet','Fetter the best of everything');b.type='button';b.style.marginTop='8px';b.onclick=function(){fetterBest();openPanel('post');};body.append(b);}
     note.textContent=fettered.length?'Fettered: '+fettered.map(x=>x.d.name).join(', ')+'.':'Nothing fettered. Nothing enters with nothing at stake.';if(!fettered.length)note.className='warn';else note.className='';}
-  else if(id==='ledger'){$('ovSub').textContent='The exchange\'s book. Not built in this slice.';
+  else if(id==='ledger'){
     body.append(el('p','','It will hold offers to buy and offers to sell, matched by the contract and held in escrow, the fee burned, and a public price history for every item.'),
       el('p','','Nothing is listed: there is no chain and no other shard here, and no price is invented.'));}
-  else if(id==='door'){$('ovSub').textContent='4 of 20 delvers in the Gatehouse. Stand on the plate: three seconds and the shard forms, and the door seals behind it.';
-    const kit=el('ul','kit');[G.player].concat(G.allies).forEach(d=>{const li=el('li');li.append(el('div','ico'),el('span','nm',d.name),el('span','stamp keep',onPlate(d)?'On the plate':'Ready'));li.firstChild.append(iconEl(S.delver[d.skin][0].c,1.5));kit.append(li);});
+  else if(id==='door'){const kit=el('ul','kit');body.append(el('p','','4 of 20 delvers in Lastlight. Stand on the plate: three seconds and the shard forms, and the gate seals behind it.'));[G.player].concat(G.allies).forEach(d=>{const li=el('li');li.append(el('div','ico'),el('span','nm',d.name),el('span','stamp keep',onPlate(d)?'On the plate':'Ready'));li.firstChild.append(iconEl(S.delver[d.skin][0].c,1.5));kit.append(li);});
     body.append(kit);
     if(fettered.length)note.textContent='Fettered: '+fettered.map(x=>x.d.name).join(', ')+'. Nobody enters after the seal.';
     else{note.textContent='Nothing fettered: the door will not open. Nothing enters with nothing at stake.';}
     note.className=fettered.length?'':'warn';}
-  else if(id==='roll'){$('ovSub').textContent='Who died here, wearing what. The one place nobody is forgotten.';
+  else if(id==='roll'){
     if(!ROLL.length)body.append(el('p','','No one yet. The first death is written here, by name.'));
     else{const ul=el('ul','roll');for(const r of ROLL){const li=el('li'),who=el('span','who');who.append(el('b','','You'),document.createTextNode(' fell to '+r.by+' · seed '+hex(r.seed)+' · tick '+r.tick.toLocaleString('en-US')));
         const f=el('ul','fates');let p=0;r.items.forEach((x,i)=>{if(x.pool)p++;const row=fateRow(S.icon[x.item.d.id],x.item.d.name,x.pool?'To the pool':'Burned',x.pool?'pool':'burn',i);f.append(row);});
         li.append(who,f,el('span','meta',(r.items.length-p)+' burned, '+p+' to the pool'+(r.carried?', '+r.carried+' carried and left where they fell':'')+(r.pots?', '+r.pots+(r.pots===1?' potion':' potions')+' lost':'')+'. The seed stands in for the replay.'));ul.append(li);}
       body.append(ul);}}
-  else if(id==='mint'){$('ovSub').textContent='Burn token and ETH for a tier-I set.';
+  else if(id==='mint'){
     const row=el('div','mintrow');for(const id2 of ['wand1','robe1','ring1']){const f=el('figure'),c=el('div','ico');c.append(iconEl(S.icon[id2],2));f.append(c,el('figcaption','',ITEMS[id2].name));row.append(f);}
     body.append(row,el('p','','120 token + 0.002 ETH a set, placeholder amounts. The token is burned for good; the ETH side funds what bosses drop.'));
     const prow=el('div','mintrow'),pf=el('figure'),pc=el('div','ico');pc.append(iconEl(S.flask,2));pf.append(pc,el('figcaption','','Potion'));prow.append(pf);
@@ -1127,11 +1485,8 @@ function openPanel(id){
   ov.hidden=false;
 }
 function closePanel(){panel=null;const ov=$('overlay');ov.hidden=true;$('ovBtn').hidden=false;$('ovClose').hidden=true;$('ovNote').className='';canvas.focus();}
-function objectRect(o){   /* screen rect of a Gatehouse thing and its prompt, in buffer pixels */
-  const cx=(o.tx+.5)*16-G.camx;let top,bot;
-  if(o.spr){const sp=o.spr==='brazier'?S.gate.brazier[0]:S.gate[o.spr];bot=(o.ty+1)*16-G.camy;top=bot-sp.height-20;}
-  else{top=G.door.y0*16-G.camy-20;bot=(G.door.y1+1)*16-G.camy;}
-  return {x0:cx-30,x1:cx+30,y0:top,y1:bot};}
+function objectRect(o){   /* screen rect of a desk, the person behind it and its prompt, in buffer pixels */
+  const cx=(o.tx+.5)*16-G.camx,bot=(o.ty+1)*16-G.camy,top=bot-o.h-14;return {x0:cx-34,x1:cx+34,y0:top,y1:bot};}
 
 /* ---------- render ---------- */
 function circ(g,x,y,r){g.beginPath();g.arc(x,y,r,0,6.2832);g.fill();}
@@ -1160,10 +1515,11 @@ function render(){
   for(const b of G.bags)dl.push([b.y,1,b]);
   for(const e of G.enemies)if(!e.dead)dl.push([e.y,2,e]);
   if(!G.boss.dead)dl.push([G.boss.y,3,G.boss]);
-  for(const a of G.allies)if(!a.dead)dl.push([a.y,4,a]);
-  if(!P.dead&&G.state!=='out')dl.push([P.y,4,P]);
+  const ft=G.gate?4:0;   /* in the village people sort by their feet, not their middle: below a thing's base is in front of it */
+  for(const a of G.allies)if(!a.dead)dl.push([a.y+ft,4,a]);
+  if(!P.dead&&G.state!=='out')dl.push([P.y+ft,4,P]);
   if(G.portal)dl.push([G.portal.y-8,5,G.portal]);
-  if(G.gate)for(const o of GATE_OBJECTS)if(o.spr)dl.push([(o.ty+1)*16-1,6,o]);
+  if(G.gate){for(const e of scenery)if(e.k!=='none')dl.push([e.y,6,e]);for(const o of VILLAGE_OBJECTS)dl.push([o.npc.y+4,7,o.npc]);for(const v of villagers)dl.push([v.y+4,7,v]);for(const h of hens)dl.push([h.y+1,8,h]);}
   dl.sort((a,b)=>a[0]-b[0]);
   for(const d of dl){const o=d[2],x=Math.round(o.x)-camx,y=Math.round(o.y)-camy;
     if(x<-40||y<-40||x>vw+40||y>vh+40)continue;
@@ -1186,11 +1542,17 @@ function render(){
       shadow(g,x,y+3,5);
       g.drawImage(o.flash>0||o.dash>0?(left?fr.wf:fr.w):(left?fr.f:fr.c),x-(left?9:7),y-12);
       lights.push([x+(left?-6:7),y-3,(isP?G.st.light:58)+fl*Math.sin((t+o.skin*40)*.17)*2,'#f7c04a',1]);}
-    else if(d[1]===6){const sp=o.spr==='brazier'?S.gate.brazier[(t>>3)&1]:S.gate[o.spr],ox=(o.tx+.5)*16-camx,oy=(o.ty+1)*16-camy;
-      g.drawImage(sp,Math.round(ox-sp.width/2),oy-sp.height);
-      lights.push([ox,oy-sp.height/2,30,'#d9cfb4',0]);
-      if(o.spr==='brazier')lights.push([ox,oy-sp.height+3,54+fl*Math.sin(t*.2)*2,'#e8822e',1]);
-      if(o.spr==='banner')lights.push([ox,oy-8,22,'#5fd1b5',0]);}
+    else if(d[1]===6){const sp=sceneryCv(o,t);if(sp)g.drawImage(sp,Math.round(x-sp.width/2),Math.round(y+o.oy)-sp.height);
+      if(o.k==='lantern')lights.push([x,y-18,40+fl*Math.sin((t+o.x)*.13)*1.5,'#f7c04a',1]);
+      else if(o.k==='canopy')lights.push([x,y-17,38+fl*Math.sin((t+o.x)*.11)*1.5,'#f7c04a',1]);
+      else if(o.k==='fire')lights.push([x,y-5,66+fl*(Math.sin(t*.23)*3+((t>>2)%2)*2),'#e8822e',1]);
+      else if(o.k==='brazier')lights.push([x,y-9,54+fl*Math.sin(t*.2)*2,'#e8822e',1]);
+      else if(o.k==='stele')lights.push([x,y-16,24,'#5fd1b5',0]);
+      else if(o.k==='house')for(const w of o.lights)lights.push([x+w[0],y+w[1],22,'#f7c04a',1]);
+      else if(o.k==='chest'||o.k==='bookshelf'||o.k==='anvil')lights.push([x,y-10,20,'#d9cfb4',0]);}
+    else if(d[1]===7){const look=S.vil.villager[o.look],dx=P.x-o.x;let face=o.face;if(o.vil&&Math.abs(dx)<70&&Math.abs(P.y-o.y)<48)face=dx<0?-1:1;
+      const fr=look[o.moving?((t>>3)&1):(o.vil&&((t+(o.x|0))%160)<10?1:0)],left=face<0;shadow(g,x,y+3,4);g.drawImage(left?fr.f:fr.c,x-8,y-12);}
+    else if(d[1]===8){const fr=S.vil.hen[o.peck?1:(o.moving?((t>>2)&1):0)];g.drawImage(o.face<0?fr.f:fr.c,x-4,y-7);}
     else{const pu=RM?.5:.5+.5*Math.sin(t*.09);
       ell(g,x,y,16,9,PAL.d);ell(g,x,y,12,7,PAL.t);ell(g,x,y,7+pu*2,4+pu,PAL.T);ell(g,x,y,3+pu,2,'#ffffff');
       for(let i=0;i<40;i++){const a=t*.05+i*.63,rr=5+(i%9)*1.7;
@@ -1203,12 +1565,12 @@ function render(){
   if(G.mend&&t-G.mend.t<26){const q=(t-G.mend.t)/26,rr=10+q*54,mx=Math.round(G.mend.x)-camx,my=Math.round(G.mend.y)-camy;
     g.fillStyle=q<.5?'#ffffff':PAL.H;for(let i=0;i<48;i++){const a=i*.1309;g.fillRect(Math.round(mx+Math.cos(a)*rr),Math.round(my+Math.sin(a)*rr*.6),1,1);}
     lights.push([mx,my,rr,'#5fd1b5',1,1.6]);}
-  for(const p of G.parts){g.fillStyle=p.col;g.fillRect(Math.round(p.x)-camx,Math.round(p.y)-camy,p.s,p.s);}
+  for(const p of G.parts){if(p.d)g.globalAlpha=Math.min(1,p.life/30);g.fillStyle=p.col;g.fillRect(Math.round(p.x)-camx,Math.round(p.y)-camy,p.s,p.s);}g.globalAlpha=1;
   /* coloured glow, then darkness with the lights punched out in three bands */
   g.globalCompositeOperation='lighter';
   for(const L of lights){if(!L[4])continue;const m=L[5]||1;g.fillStyle=L[3];g.globalAlpha=.032*m;circ(g,L[0],L[1],L[2]*.75);g.globalAlpha=.028*m;circ(g,L[0],L[1],L[2]*.4);}
   g.globalAlpha=1;g.globalCompositeOperation='source-over';
-  const d=dctx;d.globalCompositeOperation='source-over';d.clearRect(0,0,vw,vh);d.fillStyle=G.state==='dead'?'rgba(22,4,10,.9)':G.gate?'rgba(6,4,12,.42)':'rgba(6,4,12,.88)';d.fillRect(0,0,vw,vh);
+  const d=dctx;d.globalCompositeOperation='source-over';d.clearRect(0,0,vw,vh);d.fillStyle=G.state==='dead'?'rgba(22,4,10,.9)':G.gate?'rgba(9,7,24,.4)':'rgba(6,4,12,.88)';d.fillRect(0,0,vw,vh);
   d.globalCompositeOperation='destination-out';
   for(const L of lights){
     if(L[4]){d.fillStyle='rgba(0,0,0,.3)';circ(d,L[0],L[1],L[2]);d.fillStyle='rgba(0,0,0,.45)';circ(d,L[0],L[1],L[2]*.72);d.fillStyle='rgba(0,0,0,.7)';circ(d,L[0],L[1],L[2]*.44);}
@@ -1224,7 +1586,7 @@ function render(){
     for(let i=0;i<24*f;i++){const a=-1.5708+i*.2618;g.fillStyle=i%2?PAL.T:'#ffffff';g.fillRect(Math.round(x+Math.cos(a)*14),Math.round(y-4+Math.sin(a)*9),1,1);}}
   if(!P.dead&&G.state==='play'&&P.drink>0){const x=Math.round(P.x)-camx,y=Math.round(P.y)-camy;textC(g,'Drinking',x,y-32,PAL.H);bar(g,x-10,y-25,20,1-P.drink/POT_T,PAL.H);}
   if(G.portal&&G.state==='play')textC(g,'Extract',Math.round(G.portal.x)-camx,Math.round(G.portal.y)-camy-40,PAL.T);
-  if(G.gate&&G.near&&!panel&&!(G.near.id==='door'&&G.door.t>0)){const o=G.near,r=objectRect(o),cx=(o.tx+.5)*16-camx;textC(g,o.name,cx,r.y0+2,PAL.b);textC(g,(touchMode||COARSE)?'tap':'space',cx,r.y0+10,PAL['6']);}
+  if(G.gate&&G.near&&!panel&&!(G.near.id==='door'&&G.door.t>0)){const o=G.near,r=objectRect(o),cx=(o.tx+.5)*16-camx;textC(g,o.name,cx,r.y0+2,PAL.b);textC(g,((touchMode||COARSE)?'tap':'space')+' - '+o.npc.name,cx,r.y0+10,PAL['6']);}
   if(G.door&&(G.state==='play'||G.gate)){const D=G.door,cx=D.px+16-camx,cy=D.py+24-camy;
     if(D.state==='shut'&&D.t>0){textC(g,D.n+' of 4 ready',cx,D.py-camy-26,PAL.T);const f=D.t/DOOR_T;
       for(let i=0;i<24*f;i++){const a=-1.5708+i*.2618;g.fillStyle=i%2?PAL.T:'#ffffff';g.fillRect(Math.round(cx+Math.cos(a)*22),Math.round(cy+Math.sin(a)*28),1,1);}}
@@ -1279,7 +1641,7 @@ function tickHud(){
   $('skillFill').style.width=(P.scd>0?(1-P.scd/P.scdMax)*100:100)+'%';$('skillNum').textContent=P.scd>0?(P.scd/60).toFixed(1)+' s':'Space';
   $('recallBtn').classList.toggle('on',P.recall>0);
   $('drinkTxt').textContent=G.gate?'Potions · '+stock+' in the strongbox':'Q · drink · '+G.pouch+' / '+POUCH;$('drinkBtn').classList.toggle('on',P.drink>0);
-  $('rec').textContent=(G.gate?'Gatehouse · next seed ':'seed ')+hex(G.seed)+' · tick '+G.tick.toLocaleString('en-US')+' · 60 Hz · shard 1 of 1';
+  $('rec').textContent=(G.gate?'Lastlight · next seed ':'seed ')+hex(G.seed)+' · tick '+G.tick.toLocaleString('en-US')+' · 60 Hz · shard 1 of 1';
 }
 
 /* ---------- sprite sheet ---------- */
@@ -1290,8 +1652,11 @@ function buildSheet(){
     wrap.append(h,sh);root.append(wrap);}
   row('Delvers, one class in four cloaks',[['You, the lamplighter',S.delver[0][0].c],['Walk frame',S.delver[0][1].c],['Vell',S.delver[1][0].c],['Odric',S.delver[2][0].c],['Tamsin',S.delver[3][0].c],['Hit flash',S.delver[0][0].w]]);
   row('The dungeon\'s own',[['The Forgotten',S.forgotten.c],['Shade',S.shade.c],['Gaoler',S.gaoler.c],['The Turnkey, 32 × 32',S.turnkey.c]]);
-  row('The Gatehouse and the boss door',[['Strongbox',S.gate.chest],['Fettering post',S.gate.pillar],['Ledger',S.gate.bookshelf],['The Roll',S.gate.banner],['The Mint',S.gate.brazier[0]],['',S.gate.brazier[1]],['The door',S.portcullis]]);
-  row('Tiles and props',[['Flagstone',TILES.floor[0]],['Cracked',TILES.floor[3]],['Mossed',TILES.floor[4]],['Wall face',TILES.face[0]],['Wall top',TILES.top],['Torch',S.torch[0]],['',S.torch[1]],['',S.torch[2]],['Gravestone',S.grave],['Bag, tier I',S.bag[1]],['Tier II',S.bag[2]],['Tier III',S.bag[3]],['Draught',S.flask]]);
+  const V=S.vil;
+  row('Lastlight: the six at their desks, the two who walk, the hens',[['Ashby, the Counting House',V.villager.ashby[0].c],['Gerrit, the Fettering Post',V.villager.gerrit[0].c],['Ione, the Exchange',V.villager.ione[0].c],['Tobin, the Roll',V.villager.tobin[0].c],['Quill, the Mint',V.villager.quill[0].c],['Maud, the gate',V.villager.maud[0].c],['Hob',V.villager.hob[0].c],['Nell',V.villager.nell[0].c],['Walk frame',V.villager.hob[1].c],['A hen',V.hen[0].c],['Pecking',V.hen[1].c]]);
+  row('The village',[['The Counting House',V.house.bank.cv,2],['A cottage',V.house.cottage.cv,2],['',V.house.cottage2.cv,2],['An awning',V.canopy.ledger,2],['',V.canopy.post,2],['',V.canopy.mint,2],['Counter',V.counter,2],['The well',V.well],['The Roll',V.stele],['Lantern',V.lantern],['Signpost',V.sign],['Tree',V.tree[0]],['',V.tree[1]],['',V.tree[2]],['The fire',V.fire[0]],['',V.fire[1]],['Seat',V.stool],['Anvil',V.anvil],['Barrel',V.barrel],['Crate',V.crate]]);
+  row('The desks\' things, and the gate',[['Strongbox',S.gate.chest],['Fettering post',S.gate.pillar],['Ledger',S.gate.bookshelf],['Banner',S.gate.banner],['The Mint\'s fire',S.gate.brazier[0]],['',S.gate.brazier[1]],['The gate',S.portcullis]]);
+  row('Tiles and props',[['Grass',TILES.grass[0]],['Flowers',TILES.grass[3]],['Worn',TILES.grass[4]],['Lane',TILES.path[0]],['Cobbles',TILES.cobble[0]],['Flagstone',TILES.floor[0]],['Cracked',TILES.floor[3]],['Mossed',TILES.floor[4]],['Wall face',TILES.face[0]],['Wall top',TILES.top],['Torch',S.torch[0]],['',S.torch[1]],['',S.torch[2]],['Gravestone',S.grave],['Bag, tier I',S.bag[1]],['Tier II',S.bag[2]],['Tier III',S.bag[3]],['Draught',S.flask]]);
   row('Projectiles: diamonds are yours, orbs are theirs',[['Bolt I',S.b.bolt1,6],['Bolt II',S.b.bolt2,6],['Bolt III',S.b.bolt3,6],['Other delvers',S.b.ally,6],['Forgotten',S.b.bone,6],['Shade',S.b.purple,6],['Gaoler',S.b.red,6],['Turnkey',S.b.orange,6],['Turnkey, heavy',S.b.big,6]]);
   const gear=[];for(const id in ITEMS)gear.push([ITEMS[id].name+' · '+ROMAN[ITEMS[id].tier],S.icon[id]]);
   row('Gear: ten items in three tiers, and three skill items',gear);
@@ -1345,7 +1710,8 @@ function start(){
     plate:function(){const D=G.door,x=D.px+16,y=D.py+24;G.player.x=x;G.player.y=y;G.cam.x=x;G.cam.y=y;G.allies.forEach((a,i)=>{a.x=x+(i%2?-5:5);a.y=y+(i-1)*14;});},
     mapdump:function(){return {MW:MW,MH:MH,map:Array.from(map),rooms:JSON.stringify(rooms),px:mapCv.getContext('2d').getImageData(0,0,mapCv.width,mapCv.height).data.reduce(function(h,v){return (h*31+v)>>>0;},7)};},
     hurt:function(n){hurtDelver(G.player,n);},boss:function(hp){G.boss.hp=hp;},skill:function(i){pickSkill(i);skillHit=true;},give:function(id){carried.push(mk(id,G.rng));hudDirty=true;},
-    delve:function(){if(G.state==='gate')startDelve();},goto:function(id){const o=GATE_OBJECTS.find(x=>x.id===id),x=o.spr?(o.tx+.5)*16:21.5*16,y=o.spr?(o.ty+.5)*16+(o.ty<7?20:-20):7.5*16;G.player.x=x;G.player.y=y;G.allies.forEach((a,i)=>{a.x=Math.max(28,x-20-i*12);a.y=y+8;});},
+    delve:function(){if(G.state==='gate')startDelve();},goto:function(id){const o=VILLAGE_OBJECTS.find(x=>x.id===id),D=G.door,x=o.use?(o.use[0]+.5)*16:D.px+16,y=o.use?(o.use[1]+.5)*16:D.py+24;G.player.x=x;G.player.y=y;G.cam.x=x;G.cam.y=y;},
+    objects:function(){return VILLAGE_OBJECTS.map(o=>({id:o.id,use:o.use}));},spawn:function(){return [24,18];},
     use:function(){useHit=true;},close:closePanel,back:function(){$('ovBtn').click();},roll:function(){return ROLL;},vault:function(){return vault;},wager:function(){return wager;},
     pouch:function(){return G.pouch;},stock:function(n){if(n!==undefined)stock=n;return stock;},drink:function(){drinkHit=true;},mintPotion:function(){stock++;hudDirty=true;},
     /* fastRun(seed, {pots, ticks}): a whole run under the autopilot, stepped synchronously with no rendering; returns how it ended */
