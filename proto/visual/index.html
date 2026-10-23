@@ -674,7 +674,8 @@ const WAKE=150,REACH=190;   /* px: a pack wakes together, and shoots from furthe
 const NAMES=['Vell','Odric','Tamsin'];
 /* One skill per delver, carried as a wagered item and chosen in the entry hall; cd in ticks.
    Recall is the way out that pays nothing, and there is none once the Turnkey wakes. */
-const SKILLS=[{name:'Slip',cd:150,note:'dash through bolts'},{name:'Mend',cd:540,note:'heal all nearby'},{name:'Sunder',cd:360,note:'a heavy strike'}];
+const SKILLS=[{name:'Slip',cd:150,note:'dash through bolts'},{name:'Mend',cd:540,note:'heal all nearby'},{name:'Sunder',cd:480,note:'a heavy strike'}];   /* Sunder 2026-10-23: was cd 360 and x3 damage a bolt - "quite strong" (operator) */
+const WALK=72,ALLY_WALK=65;   /* px/s; 2026-10-23: were 64 and 58 - "movement should be slightly increased" (operator) */
 const RECALL=180;
 /* The sealed boss door (SPEC §2): a portcullis across the corridor two tiles before the Turnkey's chamber, and a
    ready plate before it. The clock runs while the player stands on the plate (the one human carries it; in a
@@ -744,7 +745,7 @@ function updatePlayer(P){
   if(keys.r&&B0.awake&&G.tick-G.nag>70){G.nag=G.tick;addText(P.x,P.y-32,B0.dead?'Use the seal':'No way back',PAL.e,60);}
   const rec=!!keys.r&&P.rlock<=0&&P.dash<=0&&!B0.awake;
   if(P.dash>0){P.dash--;tryMove(P,P.ddx*5.5,P.ddy*5.5);if(!RM)puff(P.x,P.y-5,1,[PAL.T,PAL.t],.3,10);}
-  else if(P.moving){const sp=64/60*Math.min(1,touch?l:1)*(rec?.5:1);tryMove(P,ix/l*sp,iy/l*sp);}
+  else if(P.moving){const sp=WALK/60*Math.min(1,touch?l:1)*(rec?.5:1);tryMove(P,ix/l*sp,iy/l*sp);}
   let ax=null,ay=0;
   if(touchMode){const e=nearestFoe(P.x,P.y,150);if(e){ax=e.x;ay=e.y-(e===G.boss?12:6);}}
   else if(mouse.seen){mouse.wx=mouse.bx+G.camx;mouse.wy=mouse.by+G.camy;ax=mouse.wx;ay=mouse.wy;}
@@ -754,7 +755,7 @@ function updatePlayer(P){
   if(rec){if(++P.recall>=RECALL){recallOut();return;}}else P.recall=0;
   P.cd--;
   const want=!rec&&P.dash<=0&&(touchMode?ax!==null:(mouseDown||autoFire)&&ax!==null);
-  if(want&&P.cd<=0){P.cd=st.rate*60;P.lastShot=G.tick;shoot(P.x,P.y-5,Math.atan2(ay-(P.y-5),ax-P.x),178,st.bolt,st.dmg,0,46);}
+  if(want&&P.cd<=0){P.cd=st.rate*60;P.lastShot=G.tick;shoot(P.x,P.y-5,Math.atan2(ay-(P.y-5),ax-P.x),188,st.bolt,st.dmg,0,54);}   /* 2026-10-23: was 178 px/s for 46 ticks (136 px); now 169 px, a quarter further */
   heal(P,st.maxhp);if(P.flash>0)P.flash--;
   const B=G.boss,br=rooms[5];
   if(!B.awake&&!B.dead&&P.x>(br.x+1)*16&&P.y>br.y*16&&P.y<(br.y+br.h)*16){B.awake=true;addText(B.x,B.y-44,'The Turnkey wakes',PAL.o,110);log('The Turnkey wakes. No recall now: break him or be forgotten.');G.shake=5;hudDirty=true;}
@@ -808,7 +809,7 @@ function useSkill(P,ix,iy,l,ax,ay){
       t.hp=Math.min(mx,t.hp+35);addText(t.x-6,t.y-22,'+35',PAL.H,40);puff(t.x,t.y-6,6,[PAL.H,'#ffffff'],.6,20);n++;}
     G.mend={x:P.x,y:P.y,t:G.tick};log('You mend '+n+(n===1?' delver.':' delvers.'));}
   else{const a=ax!==null?Math.atan2(ay-(P.y-5),ax-P.x):P.face<0?3.1416:0;
-    for(let i=-2;i<=2;i++)shoot(P.x,P.y-5,a+i*.11,200,'bolt3',G.st.dmg*3,0,52);
+    for(let i=-2;i<=2;i++)shoot(P.x,P.y-5,a+i*.11,200,'bolt3',G.st.dmg*2,0,52);
     G.shake=Math.max(G.shake,2);puff(P.x,P.y-5,10,[PAL.T,'#ffffff'],1.2,14);}
 }
 function updateAlly(a){
@@ -821,13 +822,13 @@ function updateAlly(a){
     if(!gather){if(d>keep+15){mx+=dx/d;my+=dy/d;}else if(d<keep-15){mx-=dx/d;my-=dy/d;}
       mx+=-dy/d*a.dir*.7;my+=dx/d*a.dir*.7;}
     a.face=dx<0?-1:1;a.cd--;
-    if(a.cd<=0){a.cd=18+G.rng()*8;a.lastShot=G.tick;shoot(a.x,a.y-5,Math.atan2(tgt.y-(tgt===B?12:6)-(a.y-5),dx)+(G.rng()-.5)*.16,160,'ally',a.dmg,0,46);}}
+    if(a.cd<=0){a.cd=18+G.rng()*8;a.lastShot=G.tick;shoot(a.x,a.y-5,Math.atan2(tgt.y-(tgt===B?12:6)-(a.y-5),dx)+(G.rng()-.5)*.16,160,'ally',a.dmg,0,54);}}
   if(!P.dead&&(gather||!tgt)){
     const tx=gather?D.px+16+(a.skin%2?-5:5):P.x+a.ox,ty=gather?D.py+24+(a.skin-2)*14:P.y+a.oy,dx=tx-a.x,dy=ty-a.y,d=Math.hypot(dx,dy);
     if(d>320){a.x=P.x;a.y=P.y;}else if(d>(gather?2:9)){mx=dx/d;my=dy/d;if(!tgt)a.face=dx<0?-1:1;}}
   for(const b of G.bullets){if(b.from===0)continue;const dx=a.x-b.x,dy=a.y-5-b.y,d2=dx*dx+dy*dy;
     if(d2<676){const d=Math.sqrt(d2)||1;mx+=dx/d*1.6*a.skill;my+=dy/d*1.6*a.skill;}}
-  const ml=Math.hypot(mx,my);a.moving=ml>.12;if(a.moving)tryMove(a,mx/ml*58/60,my/ml*58/60);
+  const ml=Math.hypot(mx,my);a.moving=ml>.12;if(a.moving)tryMove(a,mx/ml*ALLY_WALK/60,my/ml*ALLY_WALK/60);
   if(G.rng()<.01)a.dir=-a.dir;
   if(a.hp<a.max*.4&&a.pots>0&&a.dcd<=0&&drink(a))addText(a.x,a.y-30,a.name+' drinks',PAL.H,50);
   heal(a,a.max);if(a.flash>0)a.flash--;
@@ -1058,7 +1059,7 @@ function updateGatePlayer(P){
   let ix=((keys.d||keys.arrowright)?1:0)-((keys.a||keys.arrowleft)?1:0),iy=((keys.s||keys.arrowdown)?1:0)-((keys.w||keys.arrowup)?1:0);
   if(touch){ix=touch.dx;iy=touch.dy;}
   const l=Math.hypot(ix,iy);P.moving=!panel&&l>.15;
-  if(P.moving){const sp=64/60*Math.min(1,touch?l:1);tryMove(P,ix/l*sp,iy/l*sp);if(Math.abs(ix)>.2)P.face=ix<0?-1:1;}
+  if(P.moving){const sp=WALK/60*Math.min(1,touch?l:1);tryMove(P,ix/l*sp,iy/l*sp);if(Math.abs(ix)>.2)P.face=ix<0?-1:1;}
   if(P.flash>0)P.flash--;P.hp=G.st.maxhp;
   let near=null,bd=1e9;
   for(const o of GATE_OBJECTS){const ax=(o.tx+.5)*16,ay=(o.ty+.5)*16,dx=Math.abs(P.x-ax),dy=Math.abs(P.y-ay);if(dx<24&&dy<24&&dx+dy<bd){bd=dx+dy;near=o;}}

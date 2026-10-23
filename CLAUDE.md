@@ -46,7 +46,10 @@ not play-to-earn: permadeath is the sink the genre never had.
   reload, a pack that wakes at 150 px and shoots from 190 — the numbers and the old ones are in
   `EDEF`; the Turnkey is unchanged. `node proto/visual/proxy.cjs` plays seeded runs with a
   headless autopilot (the ally logic: kite, dodge, drink under 40 %, no skill) and prints deaths
-  per run — a proxy for a change to the mobs, never the target. Open the file in a browser;
+  per run — a proxy for a change to the mobs, never the target. Tuning pass two (2026-10-23, from
+  the operator's play): bolts a quarter further (188 px/s for 54 ticks, was 178 for 46), feet 72
+  px/s (was 64; allies 65, was 58), Sunder a third weaker (×2 damage a bolt, was ×3; 8 s cooldown,
+  was 6). Open the file in a browser;
   `node proto/visual/shots.cjs` screenshots each game state into `proto/visual/out/` (gitignored).
 - `art/` is the art bank (2026-10-02): every sprite as data — `bank.js` (the palette, the loader,
   the tile generator), `creatures.js`, `items.js`, `world.js` — and `index.html`, a gallery that
