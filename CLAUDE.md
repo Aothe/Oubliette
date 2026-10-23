@@ -49,7 +49,12 @@ not play-to-earn: permadeath is the sink the genre never had.
   per run — a proxy for a change to the mobs, never the target. Tuning pass two (2026-10-23, from
   the operator's play): bolts a quarter further (188 px/s for 54 ticks, was 178 for 46), feet 72
   px/s (was 64; allies 65, was 58), Sunder a third weaker (×2 damage a bolt, was ×3; 8 s cooldown,
-  was 6). Open the file in a browser;
+  was 6). The rooms were then tuned harder again, the Turnkey held: the Forgotten and Shades lead
+  their shots (`LEAD`), bolts 100 / 84 px/s for 11 / 10 (were 84 / 74 for 9), a Shade fan of five,
+  a Gaoler ring of 14 at 60 px/s for 15, one more body in each early room, the last Gaoler always
+  drops a potion; the Turnkey's bolts keep pace with the faster delvers (spirals +12 %, aimed
+  volleys 104 / 112), nothing else — the proxy dies at him 16 of 80 runs before and after, and in
+  the rooms 1 of 80 (was never). Open the file in a browser;
   `node proto/visual/shots.cjs` screenshots each game state into `proto/visual/out/` (gitignored).
 - `art/` is the art bank (2026-10-02): every sprite as data — `bank.js` (the palette, the loader,
   the tile generator), `creatures.js`, `items.js`, `world.js` — and `index.html`, a gallery that
