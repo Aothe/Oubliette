@@ -26,7 +26,8 @@ build time has been measured for anything in this repo.*
    counsel pass and a review before any of it holds value); wallet login with session keys and a
    relayer so the player signs once per session (medium). Everything else is small.
 4. **The cuts** (below) remove nothing from the test "people will burn tokens for gear they can
-   lose and trade". They need the operator's yes.
+   lose and trade". *Answered 2026-10-23: 1 and 2 agreed, 3–8 "okay", with one addition — keyed
+   entry comes back in for launch (§1, and SPEC §2).*
 5. **The gates, in order:** the thirty-run play test on the slice as it is · the counsel pass and
    the twelve rules on paper · contracts on the testnet with a throwaway token, fuzzed · the server
    and the client port · a dress rehearsal on the testnet · launch day, scripted and rehearsed.
@@ -42,6 +43,7 @@ build time has been measured for anything in this repo.*
 | The hub | the village (§2, 2026-10-22) as the lobby: the desks are the chain screens — strongbox, fettering, the gate, the mint, the Roll read from chain events, the Ledger over the exchange | small over what exists; the desks are panels over calls | login, contracts |
 | Contracts | `Gear` (ERC-721, lock flag, mint burns token + takes ETH), `Items` (ERC-1155 potions and repair kits), `Runs` (open with a commitment, settle, roll from `arbBlockHash(T)`, the supply rules), `Treasury` (no withdraw), `Exchange` (on-chain offers, §2) | medium | the token address; the twelve rules; counsel |
 | The token | Pons v2, launch day (§3 below) | small | nothing |
+| Keyed entry | a key to enter the dungeon (§2, 2026-10-23: "too important to leave out"); a consumable in `Items`, burned on entry; how it is got and what it costs are open and simulated first — a per-run price is the participation dial | small in the contracts; medium in the economy (the price) | the sim; `Items` |
 | Chat | eight canned call-outs on the dungeon channel (§2); local and private messages as text need moderation — see cuts | small | the server |
 | Training ground | one preset room with dummies, a door off the village; the tutorial as a card on first login | small | the client |
 | Economy constants | `s` = ⅓, `d0` by play (§5), mint 120 token + 0.002 ETH placeholder, repair 30, fee 2 %, the ETH repair leg 0.0012, half the mint ETH to the operator (§2) | decided | — |
@@ -54,19 +56,21 @@ what the release tests.
 1. **Chat: canned call-outs only, on every channel, for the gauge.** §2 says local and private
    messages exist from the start; as free text they need the blocked-word list, rate limits and a
    person reading reports (`docs/chat-trade.md`). For the gauge, the same eight call-outs serve
-   all three channels; free text arrives with the moderation budget. *Recommended: yes.*
+   all three channels; free text arrives with the moderation budget. *Recommended: yes. Agreed.*
 2. **The tutorial is a card, the training ground one room.** No scripted sequence; a page of
-   controls on first login, skippable, and one room of dummies off the village. *Recommended: yes.*
+   controls on first login, skippable, and one room of dummies off the village. *Recommended: yes. Agreed.*
 3. **The Roll is a list over chain events, no wall art.** Who died, kit, what returned, the cause,
    the seed; the "wall" is the village desk it already has. *Recommended: yes.*
 4. **The exchange is the on-chain book and nothing else:** place, fill, cancel, withdraw, the
    price history that falls out of the events. No charts, no item pages, no buy limits yet (the
    Grand Exchange rules in SPEC §4 come with the first city). *Recommended: yes.*
-5. **No stock drops, no world boss, no cosmetics, no dungeon two, no same-run re-entry, no keyed
-   entry, no drand** — all already not-v0 or §4; stated here so nobody adds one "while we are at
-   it". The ETH treasury accumulates, unspent, as §7 says.
-6. **The village stays the size the other session built it.** Named desks, no quests, no shops
-   beyond the mint; the first city is the Undercroft, after the gauge (§2).
+5. **No stock drops, no world boss, no cosmetics, no dungeon two, no same-run re-entry, no drand**
+   — all already not-v0 or §4; stated here so nobody adds one "while we are at it". The ETH
+   treasury accumulates, unspent, as §7 says. *Keyed entry was on this list and the operator took it
+   off (2026-10-23): it ships, with its price simulated first — see §1 and §4 step 4.*
+6. **The village stays the size it was built.** Named desks, no quests, no shops beyond the
+   mint; the first city is the Undercroft, after the gauge (§2). *The operator is happy with it as
+   it stands and will adjust its terrain and environment later (2026-10-23).*
 7. **Placeholder art ships.** The gauge tests the loop at $0; the operator liked the look; art
    direction is a decision for after the gauge (SPEC §4 "Art pipeline").
 8. **One shard, one region, one server.** Instancing the village, several shards and the
@@ -119,17 +123,20 @@ Sequence, not dates. Each line names what it needs before it can start.
    makes this easier). Needs nothing; blocks every contract.
 3. **The engine choice** (SPEC §4): TypeScript or Rust for the server, the slice's renderer kept
    for the client. Needs nothing; blocks the server.
-4. **Contracts on the testnet**, with a throwaway ERC-20 standing in for the Pons token: Gear,
-   Items, Runs, Treasury, Exchange; the halt rule and the hard run length written first; a fuzzer
+4. **The key's price, simulated** — a per-run token (and ETH?) cost patched into `sim/economy2.py` in
+   the treadmill style, with and without a free first entry a day, against runs, priced-out share
+   and the sink; pre-registered. Needs nothing; sets the key before the contracts fix it.
+5. **Contracts on the testnet**, with a throwaway ERC-20 standing in for the Pons token: Gear,
+   Items (potions, repair kits, keys), Runs, Treasury, Exchange; the halt rule and the hard run length written first; a fuzzer
    holding only the settlement key, a finisher that always reverts, a double entry, who can move
-   treasury ETH (research agenda item 6). Needs 2 and the Pons probe.
-5. **The server**, fixed-point, with the input log and the replay checker; the slice's dungeon,
+   treasury ETH (research agenda item 6). Needs 2, 4 and the Pons probe.
+6. **The server**, fixed-point, with the input log and the replay checker; the slice's dungeon,
    enemies, boss, door, potions and skills re-implemented in it. Needs 3; the largest piece.
-6. **The client port**: the slice becomes a renderer with prediction over the server's state;
-   login, session key, relayer; the village desks as panels over the contracts. Needs 5 and 4.
-7. **Dress rehearsal on the testnet**: a scripted launch day end to end, twenty people, a death,
-   a settlement, a roll, a claim, a sale. Needs 4–6.
-8. **Launch day** (§3). Needs 7 and the counsel pass.
+7. **The client port**: the slice becomes a renderer with prediction over the server's state;
+   login, session key, relayer; the village desks as panels over the contracts. Needs 6 and 5.
+8. **Dress rehearsal on the testnet**: a scripted launch day end to end, twenty people, a death,
+   a settlement, a roll, a claim, a sale. Needs 5–7.
+9. **Launch day** (§3). Needs 8 and the counsel pass.
 
 ## 5. What this costs, and what it earns
 
@@ -142,8 +149,8 @@ spend per delver is measured, which the gauge release is for.
 
 ## 6. Open, and in whose hands
 
-- **The operator:** the cuts in §2; the engine (§4 step 3); the ticker and the payout recipient;
-  when to run the play test.
+- **The operator:** the engine (§4 step 3); the ticker and the payout recipient; when to run the
+  play test; the key's shape once simulated (how it is got, its price, a free first entry or not).
 - **The repo:** the Pons transfer probe; the mint-price source (§3 item 5); the server's capacity
   at twenty players (SPEC §5, *assumed*); build time for every line above (none measured).
 - **Counsel:** the lottery shape and stake-weighted prizes (SPEC §6).
