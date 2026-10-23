@@ -63,10 +63,15 @@ not play-to-earn: permadeath is the sink the genre never had.
   `sim/operator_fee.py` (2026-10-03) measures the operator's main line on v1: 0.0012 ETH a
   repair pays $1,211 a month per 600 delvers for < 1 % of runs and survives a wallet / income
   stress; it is nearly free only because the model's delvers spend 11 % of their budgets.
+  `sim/run_length.py` (2026-10-22, E1) measures run length on v1: a run twice / four times as long at
+  today's per-run danger halves / quarters every flow per hour of play without killing minting (mint
+  burn on the pre-registered floor at 2×, under it at 4×), per-run danger raised with length more
+  than restores the sink (mints ×2, because boss drops are per run) at 13 % / 27 % of runs ending in
+  death, and wear per stage restores repair burn and nothing else.
   Nothing else built. Next: the sealed boss door and the Gatehouse in the slice (SPEC §8 step 4;
-  `docs/dungeons.md`, `docs/hub.md`), then the thirty-run play test; E1 (`docs/dungeons.md`) before
-  dungeon two; or a v2 sim for the gaps §8 step 2 lists (token cash-out, learned merchant spreads,
-  a wealth effect on demand, real budgets).
+  `docs/dungeons.md`, `docs/hub.md`), then the thirty-run play test; the operator's run-length
+  choice (SPEC §4, after E1) before dungeon two; or a v2 sim for the gaps §8 step 2 lists (token
+  cash-out, learned merchant spreads, a wealth effect on demand, real budgets).
 
 ## Commands
 
@@ -84,6 +89,7 @@ cd probe/chain/gas && npm ci && node gas.mjs               # per-action gas, loc
 .venv/bin/python sim/population.py                     # minimum viable population on v1: 150 runs, ~5 min on 4 workers; tail -f sim/out/population.log; --repro 6 s
 .venv/bin/python sim/operator_fee.py                   # operator ETH fee on repair, patched v1: 335 runs, ~30 min on 3 workers; tail -f sim/out/operator_fee.log; --repro 23 s, --report, --check
 .venv/bin/python sim/treadmill.py                      # red team A1/A2: organisation x mastery x fresh-drop budget on v1, pre-registered; 210 runs x 10,000 days, ~20 min on 3 workers; tail -f sim/out/treadmill.log; --repro, --report
+.venv/bin/python sim/run_length.py                     # E1/E4 (docs/dungeons.md): run length x per-run danger x wear on v1, pre-registered; 80 runs x 10,000 days, ~4 min on 3 workers; tail -f sim/out/run_length.log; --repro, --report
 ```
 
 ## Working agreements
