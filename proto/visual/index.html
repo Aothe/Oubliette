@@ -665,16 +665,18 @@ let zoom=2;
 const keys={};let mouse={bx:0,by:0,wx:0,wy:0,seen:false},mouseDown=false,autoFire=false,touchMode=false,touch=null,hudDirty=true;
 /* The ordinary mobs, tuned harder on 2026-10-22 (the operator: "a little bit too easy"). Before: forgotten hp 34, fire every
    1.5 s, bolt 68 px/s for 7; shade hp 20, 2.1 s, 58 for 8; gaoler hp 150, 2.7 s, 44 for 11; wake at 125 px, fire within 175. */
-const EDEF={
-  forgotten:{hp:40,spd:26,keep:62,hr:6,fire:1.25,bspd:76,dmg:9},
-  shade:{hp:24,spd:50,keep:48,hr:5,fire:1.7,bspd:66,dmg:9},
-  gaoler:{hp:170,spd:17,keep:44,hr:7,fire:2.3,bspd:50,dmg:13}
+const EDEF={   /* pass two, 2026-10-23 ("the rooms still feel quite easy"): forgotten fire 1.25 -> 1.05 s, bolt 76 -> 100 px/s for 9 -> 11; shade 1.7 -> 1.5 s, 66 -> 84 for 9 -> 10, a fan of five not three; gaoler ring 50 -> 60 px/s, 10 -> 14 bolts, 13 -> 15; the Forgotten and Shades lead their shots */
+  forgotten:{hp:40,spd:26,keep:62,hr:6,fire:1.05,bspd:100,dmg:11},
+  shade:{hp:24,spd:50,keep:48,hr:5,fire:1.5,bspd:84,dmg:10,fan:2},
+  gaoler:{hp:170,spd:17,keep:44,hr:7,fire:2.3,bspd:60,dmg:15,ring:14}
 };
+const LEAD=.8;   /* how much of a delver's movement a Forgotten or a Shade aims ahead of (0 = at the body, 1 = a perfect lead) */
 const WAKE=150,REACH=190;   /* px: a pack wakes together, and shoots from further */
 const NAMES=['Vell','Odric','Tamsin'];
 /* One skill per delver, carried as a wagered item and chosen in the entry hall; cd in ticks.
    Recall is the way out that pays nothing, and there is none once the Turnkey wakes. */
-const SKILLS=[{name:'Slip',cd:150,note:'dash through bolts'},{name:'Mend',cd:540,note:'heal all nearby'},{name:'Sunder',cd:360,note:'a heavy strike'}];
+const SKILLS=[{name:'Slip',cd:150,note:'dash through bolts'},{name:'Mend',cd:540,note:'heal all nearby'},{name:'Sunder',cd:480,note:'a heavy strike'}];   /* Sunder 2026-10-23: was cd 360 and x3 damage a bolt - "quite strong" (operator) */
+const WALK=72,ALLY_WALK=65;   /* px/s; 2026-10-23: were 64 and 58 - "movement should be slightly increased" (operator) */
 const RECALL=180;
 /* The sealed boss door (SPEC §2): a portcullis across the corridor two tiles before the Turnkey's chamber, and a
    ready plate before it. The clock runs while the player stands on the plate (the one human carries it; in a
@@ -705,7 +707,7 @@ function newRun(seed){
   const off=[[-16,-10],[14,-12],[-4,16]];
   for(let i=0;i<3;i++)G.allies.push({x:sx+off[i][0],y:sy+off[i][1],ox:off[i][0]*1.4,oy:off[i][1]*1.4,hw:4,hh:3,hp:80,max:80,face:1,cd:20+i*7,flash:0,
     moving:false,skin:i+1,dead:false,name:NAMES[i],dir:i%2?1:-1,dmg:8,skill:.55+i*.2,pots:2,drink:0,dcd:0,lastHit:-999,lastShot:-999});
-  const plan=[null,['forgotten',4],['forgotten',3,'shade',2],['gaoler',1,'forgotten',3,'shade',2],['gaoler',2,'shade',4]];
+  const plan=[null,['forgotten',5],['forgotten',3,'shade',3],['gaoler',1,'forgotten',3,'shade',2],['gaoler',2,'shade',4]];   /* 2026-10-23: one more body in each of the two early rooms (was 4; 3+2); the last two rooms unchanged so the party reaches the Turnkey no more worn than before */
   for(let i=1;i<5;i++){const r=rooms[i],p=plan[i];
     for(let j=0;j<p.length;j+=2)for(let n=0;n<p[j+1];n++)spawnEnemy(p[j],(r.x+1.5+rng()*(r.w-3))*16,(r.y+1.5+rng()*(r.h-3))*16);}
   const br=rooms[5];
@@ -744,7 +746,7 @@ function updatePlayer(P){
   if(keys.r&&B0.awake&&G.tick-G.nag>70){G.nag=G.tick;addText(P.x,P.y-32,B0.dead?'Use the seal':'No way back',PAL.e,60);}
   const rec=!!keys.r&&P.rlock<=0&&P.dash<=0&&!B0.awake;
   if(P.dash>0){P.dash--;tryMove(P,P.ddx*5.5,P.ddy*5.5);if(!RM)puff(P.x,P.y-5,1,[PAL.T,PAL.t],.3,10);}
-  else if(P.moving){const sp=64/60*Math.min(1,touch?l:1)*(rec?.5:1);tryMove(P,ix/l*sp,iy/l*sp);}
+  else if(P.moving){const sp=WALK/60*Math.min(1,touch?l:1)*(rec?.5:1);tryMove(P,ix/l*sp,iy/l*sp);}
   let ax=null,ay=0;
   if(touchMode){const e=nearestFoe(P.x,P.y,150);if(e){ax=e.x;ay=e.y-(e===G.boss?12:6);}}
   else if(mouse.seen){mouse.wx=mouse.bx+G.camx;mouse.wy=mouse.by+G.camy;ax=mouse.wx;ay=mouse.wy;}
@@ -754,8 +756,8 @@ function updatePlayer(P){
   if(rec){if(++P.recall>=RECALL){recallOut();return;}}else P.recall=0;
   P.cd--;
   const want=!rec&&P.dash<=0&&(touchMode?ax!==null:(mouseDown||autoFire)&&ax!==null);
-  if(want&&P.cd<=0){P.cd=st.rate*60;P.lastShot=G.tick;shoot(P.x,P.y-5,Math.atan2(ay-(P.y-5),ax-P.x),178,st.bolt,st.dmg,0,46);}
-  heal(P,st.maxhp);if(P.flash>0)P.flash--;
+  if(want&&P.cd<=0){P.cd=st.rate*60;P.lastShot=G.tick;shoot(P.x,P.y-5,Math.atan2(ay-(P.y-5),ax-P.x),188,st.bolt,st.dmg,0,54);}   /* 2026-10-23: was 178 px/s for 46 ticks (136 px); now 169 px, a quarter further */
+  heal(P,st.maxhp);if(P.flash>0)P.flash--;track(P);
   const B=G.boss,br=rooms[5];
   if(!B.awake&&!B.dead&&P.x>(br.x+1)*16&&P.y>br.y*16&&P.y<(br.y+br.h)*16){B.awake=true;addText(B.x,B.y-44,'The Turnkey wakes',PAL.o,110);log('The Turnkey wakes. No recall now: break him or be forgotten.');G.shake=5;hudDirty=true;}
   for(let i=G.bags.length-1;i>=0;i--){const b=G.bags[i];if(b.t<24)continue;const dx=b.x-P.x,dy=b.y-P.y;if(dx*dx+dy*dy>144)continue;
@@ -775,6 +777,7 @@ function drink(t){const isP=t===G.player,have=isP?G.pouch:t.pots;
 function heal(t,max){if(t.dcd>0)t.dcd--;
   if(t.drink>0){t.drink--;t.hp=Math.min(max,t.hp+max/3/POT_T);}
   else if(G.tick-Math.max(t.lastHit,t.lastShot)>COMBAT_T)t.hp=Math.min(max,t.hp+REGEN_OUT);}
+function track(t){t.vx=t.lx===undefined?0:t.x-t.lx;t.vy=t.ly===undefined?0:t.y-t.ly;t.lx=t.x;t.ly=t.y;}   /* px per tick, for enemies that lead their shots */
 function onPlate(o){const D=G.door;return o.x>=D.px&&o.x<D.px+D.pw&&o.y>=D.py&&o.y<D.py+D.ph;}
 function recallAlly(a){a.dead=true;a.gone=true;puff(a.x,a.y-6,22,[PAL.T,'#ffffff'],1.4,30);addText(a.x,a.y-30,a.name+' recalls',PAL.T,110);
   log(a.name+' was not on the plate and recalls: wager kept, nothing taken.');hudDirty=true;}
@@ -808,7 +811,7 @@ function useSkill(P,ix,iy,l,ax,ay){
       t.hp=Math.min(mx,t.hp+35);addText(t.x-6,t.y-22,'+35',PAL.H,40);puff(t.x,t.y-6,6,[PAL.H,'#ffffff'],.6,20);n++;}
     G.mend={x:P.x,y:P.y,t:G.tick};log('You mend '+n+(n===1?' delver.':' delvers.'));}
   else{const a=ax!==null?Math.atan2(ay-(P.y-5),ax-P.x):P.face<0?3.1416:0;
-    for(let i=-2;i<=2;i++)shoot(P.x,P.y-5,a+i*.11,200,'bolt3',G.st.dmg*3,0,52);
+    for(let i=-2;i<=2;i++)shoot(P.x,P.y-5,a+i*.11,200,'bolt3',G.st.dmg*2,0,52);
     G.shake=Math.max(G.shake,2);puff(P.x,P.y-5,10,[PAL.T,'#ffffff'],1.2,14);}
 }
 function updateAlly(a){
@@ -821,16 +824,16 @@ function updateAlly(a){
     if(!gather){if(d>keep+15){mx+=dx/d;my+=dy/d;}else if(d<keep-15){mx-=dx/d;my-=dy/d;}
       mx+=-dy/d*a.dir*.7;my+=dx/d*a.dir*.7;}
     a.face=dx<0?-1:1;a.cd--;
-    if(a.cd<=0){a.cd=18+G.rng()*8;a.lastShot=G.tick;shoot(a.x,a.y-5,Math.atan2(tgt.y-(tgt===B?12:6)-(a.y-5),dx)+(G.rng()-.5)*.16,160,'ally',a.dmg,0,46);}}
+    if(a.cd<=0){a.cd=18+G.rng()*8;a.lastShot=G.tick;shoot(a.x,a.y-5,Math.atan2(tgt.y-(tgt===B?12:6)-(a.y-5),dx)+(G.rng()-.5)*.16,160,'ally',a.dmg,0,54);}}
   if(!P.dead&&(gather||!tgt)){
     const tx=gather?D.px+16+(a.skin%2?-5:5):P.x+a.ox,ty=gather?D.py+24+(a.skin-2)*14:P.y+a.oy,dx=tx-a.x,dy=ty-a.y,d=Math.hypot(dx,dy);
     if(d>320){a.x=P.x;a.y=P.y;}else if(d>(gather?2:9)){mx=dx/d;my=dy/d;if(!tgt)a.face=dx<0?-1:1;}}
   for(const b of G.bullets){if(b.from===0)continue;const dx=a.x-b.x,dy=a.y-5-b.y,d2=dx*dx+dy*dy;
     if(d2<676){const d=Math.sqrt(d2)||1;mx+=dx/d*1.6*a.skill;my+=dy/d*1.6*a.skill;}}
-  const ml=Math.hypot(mx,my);a.moving=ml>.12;if(a.moving)tryMove(a,mx/ml*58/60,my/ml*58/60);
+  const ml=Math.hypot(mx,my);a.moving=ml>.12;if(a.moving)tryMove(a,mx/ml*ALLY_WALK/60,my/ml*ALLY_WALK/60);
   if(G.rng()<.01)a.dir=-a.dir;
   if(a.hp<a.max*.4&&a.pots>0&&a.dcd<=0&&drink(a))addText(a.x,a.y-30,a.name+' drinks',PAL.H,50);
-  heal(a,a.max);if(a.flash>0)a.flash--;
+  heal(a,a.max);if(a.flash>0)a.flash--;track(a);
 }
 function updateEnemy(e){
   if(e.dead)return;if(e.flash>0)e.flash--;SRC=e.kind;
@@ -843,30 +846,32 @@ function updateEnemy(e){
   const ml=Math.hypot(mx,my)||1;tryMove(e,mx/ml*D.spd/60,my/ml*D.spd/60);
   if(G.rng()<.008)e.dir=-e.dir;
   e.cd--;
-  if(e.cd<=0&&d<REACH){e.cd=D.fire*60*(.8+G.rng()*.4);const ang=Math.atan2(t.y-5-(e.y-6),dx);
+  if(e.cd<=0&&d<REACH){e.cd=D.fire*60*(.8+G.rng()*.4);
+    const tt=d/D.bspd*60,ang=Math.atan2(t.y+(t.vy||0)*tt*LEAD-5-(e.y-6),dx+(t.vx||0)*tt*LEAD);   /* aimed where the delver will be, not where it is */
     if(e.kind==='forgotten')shoot(e.x,e.y-6,ang,D.bspd,'bone',D.dmg,1);
-    else if(e.kind==='shade')for(let i=-1;i<=1;i++)shoot(e.x,e.y-6,ang+i*.26,D.bspd,'purple',D.dmg,1);
-    else{const o=G.rng()*.6;for(let i=0;i<10;i++)shoot(e.x,e.y-6,o+i*.6283,D.bspd,'red',D.dmg,1);}}
+    else if(e.kind==='shade'){const f=D.fan||1;for(let i=-f;i<=f;i++)shoot(e.x,e.y-6,ang+i*.22,D.bspd,'purple',D.dmg,1);}
+    else{const o=G.rng()*.6,n=D.ring||10;for(let i=0;i<n;i++)shoot(e.x,e.y-6,o+i*6.2832/n,D.bspd,'red',D.dmg,1);}}
 }
 function updateBoss(b){
   if(b.flash>0)b.flash--;if(!b.awake)return;SRC='turnkey';
   b.t++;const f=b.hp/b.max,ph=f>.66?1:f>.33?2:3;
-  if(ph!==b.ph){b.ph=ph;G.shake=6;addText(b.x,b.y-44,ph===2?'He rattles his keys':'The last lock',PAL.o,110);for(let i=0;i<24;i++)shoot(b.x,b.y-12,i*.2618,50,'orange',9,1);}
+  if(ph!==b.ph){b.ph=ph;G.shake=6;addText(b.x,b.y-44,ph===2?'He rattles his keys':'The last lock',PAL.o,110);for(let i=0;i<24;i++)shoot(b.x,b.y-12,i*.2618,56,'orange',9,1);}
+  /* 2026-10-23: the delvers got faster feet and longer reach, so his bolts keep pace - spirals 50/46/56 -> 56/52/62 px/s, the aimed volleys 82/92 -> 104/112, the phase-3 orbs 30 -> 34; health, pattern and timing unchanged */
   const tx=b.hx+Math.cos(b.t*.006)*46,ty=b.hy+Math.sin(b.t*.0085)*26,dx=tx-b.x,dy=ty-b.y,d=Math.hypot(dx,dy);
   if(d>1)tryMove(b,dx/d*.3,dy/d*.3);
   const t=nearestDelver(b.x,b.y);if(!t)return;
   const aim=Math.atan2(t.y-5-(b.y-12),t.x-b.x);b.face=t.x<b.x?-1:1;
   if(ph===1){
-    if(b.t%8===0){b.a+=.23;shoot(b.x,b.y-12,b.a,50,'orange',9,1);shoot(b.x,b.y-12,b.a+3.1416,50,'orange',9,1);}
-    if(b.t%170===90)for(let i=-2;i<=2;i++)shoot(b.x,b.y-12,aim+i*.17,82,'red',12,1);
+    if(b.t%8===0){b.a+=.23;shoot(b.x,b.y-12,b.a,56,'orange',9,1);shoot(b.x,b.y-12,b.a+3.1416,56,'orange',9,1);}
+    if(b.t%170===90)for(let i=-2;i<=2;i++)shoot(b.x,b.y-12,aim+i*.17,104,'red',12,1);
   }else if(ph===2){
-    if(b.t%72===0){const o=(b.t/72)%2*.1745;for(let i=0;i<18;i++)shoot(b.x,b.y-12,o+i*.349,46,'purple',10,1);}
-    if(b.t%110===55)for(let i=-1;i<=1;i++)shoot(b.x,b.y-12,aim+i*.12,92,'red',12,1);
+    if(b.t%72===0){const o=(b.t/72)%2*.1745;for(let i=0;i<18;i++)shoot(b.x,b.y-12,o+i*.349,52,'purple',10,1);}
+    if(b.t%110===55)for(let i=-1;i<=1;i++)shoot(b.x,b.y-12,aim+i*.12,112,'red',12,1);
     if(b.t%540===200){let n=0;for(const e of G.enemies)if(!e.dead&&e.kind==='shade')n++;
       if(n<3)for(let i=0;i<2;i++){spawnEnemy('shade',b.x+(i?40:-40),b.y);G.enemies[G.enemies.length-1].awake=true;puff(b.x+(i?40:-40),b.y-6,10,[PAL.P,PAL.p]);}}
   }else{
-    if(b.t%7===0){b.a+=.19;shoot(b.x,b.y-12,b.a,56,'orange',9,1);shoot(b.x,b.y-12,3.1416-b.a*1.3,56,'purple',9,1);}
-    if(b.t%150===0){const o=G.rng();for(let i=0;i<10;i++)shoot(b.x,b.y-12,o+i*.6283,30,'big',20,1,420);}
+    if(b.t%7===0){b.a+=.19;shoot(b.x,b.y-12,b.a,62,'orange',9,1);shoot(b.x,b.y-12,3.1416-b.a*1.3,62,'purple',9,1);}
+    if(b.t%150===0){const o=G.rng();for(let i=0;i<10;i++)shoot(b.x,b.y-12,o+i*.6283,34,'big',20,1,420);}
   }
 }
 function hurtDelver(t,dmg,src){t.hp-=dmg;t.flash=6;t.lastHit=G.tick;addText(t.x-6,t.y-22,'-'+dmg,PAL.e,34);
@@ -887,7 +892,8 @@ function killEnemy(e){
   e.dead=true;const c=e.kind==='shade'?[PAL.P,PAL.p,'#ffffff']:e.kind==='gaoler'?[PAL.R,PAL.m,PAL.i]:[PAL.b,PAL.n,PAL.B];puff(e.x,e.y-6,14,c);
   const q=G.rng(),r=G.rng;
   /* a bag with no item is a potion for the pouch (it used to heal 40 on touch; healing is a consumable now, so it is rarer) */
-  if(e.kind==='gaoler'){if(q<.2)dropBag(e.x,e.y,null);else if(q<.7)dropBag(e.x,e.y,mk(BYTIER[2][(r()*3)|0],r));else dropBag(e.x,e.y,mk(BYTIER[1][(r()*3)|0],r));}
+  if(e.kind==='gaoler'){if(q<.2)dropBag(e.x,e.y,null);else if(q<.7)dropBag(e.x,e.y,mk(BYTIER[2][(r()*3)|0],r));else dropBag(e.x,e.y,mk(BYTIER[1][(r()*3)|0],r));
+    if(!G.enemies.some(o=>!o.dead&&o.kind==='gaoler'))dropBag(e.x,e.y,null);}   /* 2026-10-23: the last Gaoler always drops a potion too, so the rooms' wear does not reach the Turnkey as a dry pouch */
   else if(e.kind==='forgotten'){if(q<.06)dropBag(e.x,e.y,null);else if(q<.14)dropBag(e.x,e.y,mk(BYTIER[1][(r()*3)|0],r));}
   else if(q<.05)dropBag(e.x,e.y,null);
 }
@@ -1058,7 +1064,7 @@ function updateGatePlayer(P){
   let ix=((keys.d||keys.arrowright)?1:0)-((keys.a||keys.arrowleft)?1:0),iy=((keys.s||keys.arrowdown)?1:0)-((keys.w||keys.arrowup)?1:0);
   if(touch){ix=touch.dx;iy=touch.dy;}
   const l=Math.hypot(ix,iy);P.moving=!panel&&l>.15;
-  if(P.moving){const sp=64/60*Math.min(1,touch?l:1);tryMove(P,ix/l*sp,iy/l*sp);if(Math.abs(ix)>.2)P.face=ix<0?-1:1;}
+  if(P.moving){const sp=WALK/60*Math.min(1,touch?l:1);tryMove(P,ix/l*sp,iy/l*sp);if(Math.abs(ix)>.2)P.face=ix<0?-1:1;}
   if(P.flash>0)P.flash--;P.hp=G.st.maxhp;
   let near=null,bd=1e9;
   for(const o of GATE_OBJECTS){const ax=(o.tx+.5)*16,ay=(o.ty+.5)*16,dx=Math.abs(P.x-ax),dy=Math.abs(P.y-ay);if(dx<24&&dy<24&&dx+dy<bd){bd=dx+dy;near=o;}}
@@ -1345,9 +1351,12 @@ function start(){
     /* fastRun(seed, {pots, ticks}): a whole run under the autopilot, stepped synchronously with no rendering; returns how it ended */
     fastRun:function(seed,o){o=o||{};const keep={stock:stock,wager:wager.slice(),sel:skillSel,tm:touchMode,t:touch,af:autoFire,vis:gateVisits};
       const r=mulberry((seed^0x5EED)>>>0);wager=[mk('wand1',r),mk('robe1',r),mk('ring1',r),null,null];skillSel=0;stock=o.pots===undefined?3:o.pots;autoFire=false;
-      newRun(seed>>>0);G.ap={room:1,wp:0,dir:1};const lim=o.ticks||20000;
-      while(G.state==='play'&&G.tick<lim){autopilotStep();update();}
-      const res={seed:hex(seed),state:G.state,ticks:G.tick,hp:Math.round(G.player.hp),room:G.ap.room,bossWoke:G.boss.awake,bossDead:G.boss.dead,drank:G.drank,pouch:G.pouch,by:G.hitBy||null,allies:G.allies.filter(a=>!a.dead).length};
+      newRun(seed>>>0);G.ap={room:1,wp:0,dir:1};const lim=o.ticks||20000,trace=[];let lastRoom=1,woke=false;
+      const mark=function(what){trace.push({at:what,tick:G.tick,hp:Math.round(G.player.hp),drank:G.drank,pouch:G.pouch,allies:G.allies.filter(a=>!a.dead).length,ahp:Math.round(G.allies.reduce((s,a)=>s+a.hp,0))});};
+      while(G.state==='play'&&G.tick<lim){autopilotStep();update();
+        if(o.trace){if(G.ap.room!==lastRoom){lastRoom=G.ap.room;mark('room '+lastRoom);}if(!woke&&G.boss.awake){woke=true;mark('boss');}}}
+      if(o.trace)mark(G.state);
+      const res={seed:hex(seed),state:G.state,ticks:G.tick,hp:Math.round(G.player.hp),room:G.ap.room,bossWoke:G.boss.awake,bossDead:G.boss.dead,drank:G.drank,pouch:G.pouch,by:G.hitBy||null,allies:G.allies.filter(a=>!a.dead).length,trace:o.trace?trace:undefined};
       touchMode=keep.tm;touch=keep.t;autoFire=keep.af;wager=keep.wager;skillSel=keep.sel;stock=keep.stock;gateVisits=keep.vis;$('overlay').hidden=true;enterGate();return res;}};
   requestAnimationFrame(frame);
 }
