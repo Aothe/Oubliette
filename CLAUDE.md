@@ -99,10 +99,12 @@ not play-to-earn: permadeath is the sink the genre never had.
   burn on the pre-registered floor at 2×, under it at 4×), per-run danger raised with length more
   than restores the sink (mints ×2, because boss drops are per run) at 13 % / 27 % of runs ending in
   death, and wear per stage restores repair burn and nothing else.
-  Nothing else built. Next: the sealed boss door and the Gatehouse in the slice (SPEC §8 step 4;
-  `docs/dungeons.md`, `docs/hub.md`), then the thirty-run play test; the operator's run-length
-  choice (SPEC §4, after E1) before dungeon two; or a v2 sim for the gaps §8 step 2 lists (token
-  cash-out, learned merchant spreads, a wealth effect on demand, real budgets).
+  The slice has the sealed boss door, the Gatehouse, potions and two tuning passes (SPEC §5, played
+  by the operator 2026-10-22/23). Nothing else built. Next: the village hub in the slice (SPEC §2,
+  2026-10-22 — a first cut exists unmerged on `feat/slice-village`), the rooms' threat (SPEC §4),
+  then the thirty-run play test; dungeon two under the band per hour (SPEC §2); or a v2 sim for
+  the gaps §8 step 2 lists (token cash-out, learned merchant spreads, a wealth effect on demand,
+  real budgets).
 
 ## Commands
 
