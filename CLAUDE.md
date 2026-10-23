@@ -79,6 +79,8 @@ not play-to-earn: permadeath is the sink the genre never had.
   the token, only for a public price without the operator owning liquidity; Pons v2 or Pools.trade.
   `docs/release.md` (2026-10-23) is the path to the one-dungeon release with a Pons-launched token:
   what ships, the cuts proposed, the launch step by step, the order of work.
+  `docs/flows.md` (2026-10-23) is the plain-English map of the whole system — the pieces, where the
+  money goes, the life of a run, the life of an item, who holds which power.
 - Status: SPEC written 2026-09-25; `sim/economy.py` v0 exists and its 10,000-day, 5-seed sweep
   (`--sweep`, 228 runs) is in SPEC §5: supply is stable iff `(1 − s)·deaths > fresh drops` — flat
   at `s = 0`, `d0` 0.10–0.20; flat in circulation only at `s = ⅓` (nothing in v0 buys t2/t3);
