@@ -67,7 +67,7 @@ play-to-earn.
 | The call-outs | Eight canned call-outs on the dungeon channel for v0: Boss, Help, On me, Wait, Going in, Leaving, Plate, Thanks. *(Operator, 2026-10-22.)* |
 | The training ground | A door off the village; a one-time, skippable tutorial on first login; a revisitable training ground with practice dummies — slow projectiles, infinite health, standing still or on a set path. Nothing there is wagered, won or counted. *(Operator, 2026-10-22.)* |
 | Dungeon two's band | The band per hour of play: as a dungeon lengthens, each run gets deadlier so that deaths — and the sink — per hour hold (E1, §5: at twice the slice's length, 13 % of runs end in death and mint burn doubles). Tested for feel when dungeon two is prototyped; "more at the door, more at the end" stays untested. *(Operator, 2026-10-22.)* |
-| How the operator is paid | Two of the three lines in `docs/capital.md`: an ETH leg on repair paid to the operator (0.0012 ETH a repair, the measured recommendation, §5) and a share of the ETH side of mints (half, in the model). The third — a launchpad's creator fee — waits on a prior question: whether a launchpad is needed at all to get live, and if so which one, given the NFTs and the exchange the game adds — "I just want a quick stab to see whether or not it's 100% necessary". *(Operator, 2026-10-22.)* |
+| How the operator is paid | Two of the three lines in `docs/capital.md`: an ETH leg on repair paid to the operator (0.0012 ETH a repair, the measured recommendation, §5) and a share of the ETH side of mints (half, in the model). The third — a launchpad's creator fee — waits on a prior question: whether a launchpad is needed at all to get live, and if so which one, given the NFTs and the exchange the game adds — "I just want a quick stab to see whether or not it's 100% necessary". *(Operator, 2026-10-22.)* **2026-10-23: the launchpad is Pons v2** — checked first (`docs/launchpad.md`: not needed for the token, needed for a public price without the operator owning liquidity; the note recommended Pools.trade), the operator chose Pons "for now"; so the creator fee is the third line: 0.7 % of trading volume in ETH, the creator tax set to 0, the payout recipient disclosed. The path to the release, with the launch step by step, is `docs/release.md`. *(Operator, 2026-10-23.)* |
 | The mint price | The token leg of the mint is set by value, not by a fixed token count, so a move in the token's price does not price players out or in (red team E1 and rule 12 in `docs/red-team.md`); supersedes "a fixed amount of the game token" in the Gear row. The ETH leg is unchanged. How "value" is read — a pool average, an oracle, a peg — is open (§4). *(Operator, 2026-10-22.)* |
 | The exchange's book | On chain: offers placed and filled by the contract, price history free and public, no private order flow, pull-based fills and no recipient callbacks (`docs/chain.md` §4–5). *(Operator, 2026-10-22.)* |
 
@@ -305,7 +305,8 @@ the exchange for wash trading and RMT patterns from day one.
   the creator fee waited on whether a launchpad is needed at all — checked the same day
   (`docs/launchpad.md`, §5): not for the token, only for a public price without the operator owning
   liquidity; Pons v2 or Uniswap Labs' Pools.trade, same day either way, Pools.trade recommended unless
-  the Pons creator fee is wanted ($11 a month per 600 delvers in the model); the operator's choice.*
+  the Pons creator fee is wanted ($11 a month per 600 delvers in the model); decided 2026-10-23: Pons v2,
+  the creator fee the third line (`docs/release.md` §3 has the launch).*
 - **Engine** — a deterministic fixed-tick server in TypeScript or Rust; a canvas/WebGL client
   (Phaser or bespoke). Browser-first: RotMG was a Flash game.
 - **Art pipeline** — the bottleneck. Pixel art is the most tractable style for commission or
@@ -487,6 +488,11 @@ before it is built.
    design cheaply. *Before the first line of Solidity: the twelve rules in `docs/red-team.md`
    ("Rules to decide before any contract is written") and the counsel questions it and
    `docs/capital.md` raise (stake-weighted prizes; delivering stock tokens to winners).*
+
+**The release plan** (2026-10-23, `docs/release.md`): the one-dungeon gauge with a Pons-launched token —
+what ships, the cuts proposed for the operator's yes or no, the launch step by step (the token on the
+day the dungeon opens, not before; creator tax 0; the transfer check first), the order of work, and
+what it costs and earns. Sizes are relative; no build time is measured.
 
 ---
 
