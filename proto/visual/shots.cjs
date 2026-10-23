@@ -137,6 +137,7 @@ const out = path.join(__dirname, 'out');
   await page.waitForTimeout(1800);
   await shot(stage, '10-seal.png');
 
+  const pouchAtDeath = await page.evaluate(() => window.__oub.pouch());   // mobs drop potions now and then, so the count at death is read, not assumed
   await page.evaluate(() => window.__oub.hurt(9999));
   await page.waitForTimeout(3400);
   await shot(page, '11-death.png');
@@ -147,8 +148,8 @@ const out = path.join(__dirname, 'out');
   await page.waitForTimeout(300);
   const roll = await page.evaluate(() => [window.__oub.G.state, window.__oub.roll().length, window.__oub.roll()[0] && window.__oub.roll()[0].by, window.__oub.roll()[0] && window.__oub.roll()[0].pots]);
   if (roll[0] !== 'gate' || roll[1] !== 1) errors.push('roll: expected one death on the Roll back in the village, got ' + roll.join(','));
-  if (roll[3] !== 1) errors.push('roll: expected 1 potion lost on the Roll row, got ' + roll[3]);
-  console.log('roll: You fell to ' + roll[2] + ', ' + roll[3] + ' potion lost');
+  if (roll[3] !== pouchAtDeath) errors.push('roll: expected ' + pouchAtDeath + ' potions lost on the Roll row, got ' + roll[3]);
+  console.log('roll: You fell to ' + roll[2] + ', ' + roll[3] + ' potion(s) lost');
   await page.evaluate(() => { window.__oub.goto('roll'); window.__oub.use(); });
   await page.waitForTimeout(300);
   await shot(stage, '13-roll.png');

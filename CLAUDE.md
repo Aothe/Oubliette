@@ -77,6 +77,10 @@ not play-to-earn: permadeath is the sink the genre never had.
   the sizing sketch.
   `docs/launchpad.md` (2026-10-22) is the quick check on whether a token launchpad is needed: not for
   the token, only for a public price without the operator owning liquidity; Pons v2 or Pools.trade.
+  `docs/release.md` (2026-10-23) is the path to the one-dungeon release with a Pons-launched token:
+  what ships, the cuts proposed, the launch step by step, the order of work.
+  `docs/flows.md` (2026-10-23) is the plain-English map of the whole system — the pieces, where the
+  money goes, the life of a run, the life of an item, who holds which power.
 - Status: SPEC written 2026-09-25; `sim/economy.py` v0 exists and its 10,000-day, 5-seed sweep
   (`--sweep`, 228 runs) is in SPEC §5: supply is stable iff `(1 − s)·deaths > fresh drops` — flat
   at `s = 0`, `d0` 0.10–0.20; flat in circulation only at `s = ⅓` (nothing in v0 buys t2/t3);
@@ -99,10 +103,12 @@ not play-to-earn: permadeath is the sink the genre never had.
   burn on the pre-registered floor at 2×, under it at 4×), per-run danger raised with length more
   than restores the sink (mints ×2, because boss drops are per run) at 13 % / 27 % of runs ending in
   death, and wear per stage restores repair burn and nothing else.
-  Nothing else built. Next: the sealed boss door and the Gatehouse in the slice (SPEC §8 step 4;
-  `docs/dungeons.md`, `docs/hub.md`), then the thirty-run play test; the operator's run-length
-  choice (SPEC §4, after E1) before dungeon two; or a v2 sim for the gaps §8 step 2 lists (token
-  cash-out, learned merchant spreads, a wealth effect on demand, real budgets).
+  The slice has the sealed boss door, the Gatehouse, potions and two tuning passes (SPEC §5, played
+  by the operator 2026-10-22/23). Nothing else built. Next: the village hub in the slice (SPEC §2,
+  2026-10-22 — a first cut exists unmerged on `feat/slice-village`), the rooms' threat (SPEC §4),
+  then the thirty-run play test; dungeon two under the band per hour (SPEC §2); or a v2 sim for
+  the gaps §8 step 2 lists (token cash-out, learned merchant spreads, a wealth effect on demand,
+  real budgets).
 
 ## Commands
 
