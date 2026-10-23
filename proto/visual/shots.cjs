@@ -39,13 +39,26 @@ const out = path.join(__dirname, 'out');
   const shot = (target, name) => target.screenshot({ path: path.join(out, name) });
 
   // window.__oub is the page's debug hook: G (state), warp(room), plate(), hurt(n), boss(hp), skill(i), give(id),
-  // mapdump(); in the Gatehouse goto(thing), use(), close(), delve(), back() (the overlay's button), roll(), vault(), wager().
+  // mapdump(); in the village goto(desk), use(), close(), delve(), back() (the overlay's button), roll(), vault(), wager(), objects(), spawn().
   const page = await browser.newPage({ viewport: { width: 1280, height: 860 } });
   page.on('pageerror', e => errors.push(e.message));
   page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
   await page.goto(page_url, { waitUntil: 'networkidle' });
   await page.waitForTimeout(1000);
-  await shot(page, '01-gatehouse.png');                 // every run starts here
+  await shot(page, '01-village.png');                   // every run starts here, in the square
+
+  // every desk, and the plate, must be walkable and reachable from where you arrive
+  {
+    const d = await page.evaluate(() => Object.assign(window.__oub.mapdump(), { objects: window.__oub.objects(), spawn: window.__oub.spawn(), plate: [42, 15] }));
+    const seen = new Uint8Array(d.MW * d.MH), q = [d.spawn];
+    seen[d.spawn[1] * d.MW + d.spawn[0]] = 1;
+    while (q.length) { const [x, y] = q.pop(); for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const nx = x + dx, ny = y + dy; if (nx < 0 || ny < 0 || nx >= d.MW || ny >= d.MH) continue;
+      const i = ny * d.MW + nx; if (seen[i] || d.map[i] !== 1) continue; seen[i] = 1; q.push([nx, ny]); } }
+    for (const o of d.objects.concat([{ id: 'plate', use: d.plate }])) { if (!o.use) continue;
+      if (!seen[o.use[1] * d.MW + o.use[0]]) errors.push('village: ' + o.id + ' at ' + o.use.join(',') + ' cannot be reached from the square'); }
+    console.log('village: ' + d.MW + 'x' + d.MH + ', ' + Array.from(seen).reduce((a, b) => a + b, 0) + ' tiles reachable');
+  }
 
   const stage = await page.$('#stage');
   const box = await stage.boundingBox();
@@ -55,9 +68,13 @@ const out = path.join(__dirname, 'out');
   await page.waitForTimeout(300);
   await shot(stage, '02-fettering-post.png');
   await page.evaluate(() => window.__oub.close());
+  await page.evaluate(() => { window.__oub.goto('strongbox'); });
+  await page.waitForTimeout(600);
+  await shot(stage, '02b-counting-house.png');
+  await page.evaluate(() => window.__oub.close());
   await page.evaluate(() => window.__oub.goto('door'));  // on the plate: the shard forms in three seconds
   await page.waitForTimeout(1500);
-  await shot(stage, '03-gate-plate.png');
+  await shot(stage, '03-gate-plate.png');            // the other three walk up from the fire
   await page.waitForTimeout(2300);
   const started = await page.evaluate(() => [window.__oub.G.state, window.__oub.G.seed]);
   if (started[0] !== 'play') errors.push('gate: expected the run to start from the plate, got ' + started[0]);
@@ -125,11 +142,11 @@ const out = path.join(__dirname, 'out');
   await shot(page, '11-death.png');
   await page.screenshot({ path: path.join(out, '12-full-page.png'), fullPage: true });
 
-  // back to the Gatehouse: the death is on the Roll, the strongbox is empty, the Mint sells a set
+  // back to the village: the death is on the Roll, the strongbox is empty, the Mint sells a set
   await page.evaluate(() => window.__oub.back());
   await page.waitForTimeout(300);
   const roll = await page.evaluate(() => [window.__oub.G.state, window.__oub.roll().length, window.__oub.roll()[0] && window.__oub.roll()[0].by, window.__oub.roll()[0] && window.__oub.roll()[0].pots]);
-  if (roll[0] !== 'gate' || roll[1] !== 1) errors.push('roll: expected one death on the Roll in the Gatehouse, got ' + roll.join(','));
+  if (roll[0] !== 'gate' || roll[1] !== 1) errors.push('roll: expected one death on the Roll back in the village, got ' + roll.join(','));
   if (roll[3] !== 1) errors.push('roll: expected 1 potion lost on the Roll row, got ' + roll[3]);
   console.log('roll: You fell to ' + roll[2] + ', ' + roll[3] + ' potion lost');
   await page.evaluate(() => { window.__oub.goto('roll'); window.__oub.use(); });
@@ -179,7 +196,7 @@ const out = path.join(__dirname, 'out');
   phone.on('pageerror', e => errors.push('phone: ' + e.message));
   await phone.goto(page_url, { waitUntil: 'networkidle' });
   await phone.waitForTimeout(1000);
-  await shot(phone, '19-phone-gatehouse.png');
+  await shot(phone, '19-phone-village.png');
   const wide = await phone.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
   if (wide > 0) errors.push('phone: page scrolls sideways by ' + wide + 'px');
   await phone.evaluate(() => { window.__oub.delve(); window.__oub.warp(2); });
