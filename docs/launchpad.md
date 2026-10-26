@@ -28,8 +28,9 @@ Nothing here is a decision or legal advice; the operator decides.*
    no launchpad fee, no power over the payout worth worrying about — unless the operator wants the
    Pons creator fee, which at the model's volume is $11 a month per 600 delvers (`docs/capital.md`
    line (b)) and at Pools.trade's 0.05 % would be under $1. Neither pays the bills; the repair fee
-   does. Before any gear contract is written, verify by one simulated transfer that the launched
-   token's `transfer()` is untaxed (could not be checked today: the explorers block this sandbox).
+   does. The launched token's `transfer()` is untaxed and it burns — MEASURED 2026-10-23 by
+   simulation on three live Pons v2 tokens (the section "Measured 2026-10-23" below); Pools.trade's
+   token is still unchecked.
 5. **What it risks:** a launchpad can change its fee split and buyback policy and, on Pons, the
    payout recipient; neither can unlock the liquidity or mint supply. A self-deployed token has
    none of those powers but needs a liquidity owner, which we do not have.
@@ -73,9 +74,11 @@ Nothing here is a decision or legal advice; the operator decides.*
   the timelocked takeover, the buyback split), not by swapping the contract.
 - Restrictions on the creator: no KYC or allowlist on chain (any address may launch — MEASURED);
   the interface's terms were not read; no exclusivity found (INFERRED).
-- The token: fixed supply, no mint function (SOURCED for PONS itself; INFERRED for launched
-  tokens). Whether its own `transfer()` is untaxed is INFERRED from the v2 design (the 99 % tax is
-  on curve buys, the 1 % is a swap hook) and not verified — see §4 and "Could not verify".
+- The token: fixed supply, no mint function — MEASURED 2026-10-23 on three launched tokens (no
+  `mint` selector in the code; `totalSupply` 1 B × 1e18). Its `transfer()` is untaxed and it has
+  `burn`/`burnFrom` — MEASURED by simulation the same day (the section "Measured 2026-10-23"); the
+  99 % snipe tax is on curve buys and the 1 % fee lives in the curve and the swap hook, not in the
+  token.
 
 ## 2. The plain alternative: our own ERC-20 and a Uniswap pool
 
@@ -131,13 +134,15 @@ Nothing here is a decision or legal advice; the operator decides.*
   launchpad's design reaches another contract.
 - What a launchpad token *could* impose: a tax in the token's own `transfer()`. That would bite
   every mint burn, every escrow move and every fill. On Pons v2 the two taxes found are on curve
-  buys (the 99 % snipe decay) and on swaps (the 1 % hook, the optional creator tax) — INFERRED to
-  leave plain transfers alone; set the creator tax to 0 regardless. Pools.trade's fee is the
+  buys (the 99 % snipe decay) and on swaps (the 1 % hook, the optional creator tax) — MEASURED
+  2026-10-23 to leave plain transfers alone, from EOAs and from contracts, before and after
+  graduation (below); set the creator tax to 0 regardless. Pools.trade's fee is the
   pool's LP fee (SOURCED), so the token is presumably plain (INFERRED). A self-deployed ERC-20 is
   plain by construction.
-- Burning: if the token has no `burn()`, the game sends to a dead address; either way circulating
-  supply only falls, which is what §3.2 needs (INFERRED). Fixed supply and no mint function hold
-  for Pons tokens (INFERRED from PONS's own); write both into our own if we deploy.
+- Burning: a Pons v2 token has `burn(uint256)` and `burnFrom(address,uint256)` and `totalSupply`
+  falls by the amount (MEASURED 2026-10-23, below), so the dead-address fallback is not needed for
+  Pons; keep it for any other token. Fixed supply and no mint function hold for Pons tokens
+  (MEASURED, same run); write both into our own if we deploy.
 
 ## 5. Speed to live
 
@@ -151,13 +156,103 @@ Nothing here is a decision or legal advice; the operator decides.*
 What changes in the SPEC if the choice is Pools.trade rather than Pons: §2 "The token" ("like any
 Pons-launched coin") and `docs/capital.md` line (b) — 0.7 % becomes 0.05 % of volume. Nothing else.
 
+## Measured 2026-10-23 — a Pons v2 token's transfers and burn (`probe/chain/pons.mjs`)
+
+*Read-only, about a minute, three public RPCs; every call is `eth_call`, `eth_getLogs`,
+`eth_getCode`, `eth_getStorageAt` or `eth_simulateV1`; nothing was sent, no key was held. Tip
+96,114,974 at 2026-10-23T17:31Z, 9.59 blocks/s. Report: `probe/chain/out/pons.txt` (gitignored —
+re-run `node probe/chain/pons.mjs > probe/chain/out/pons.txt`). Tags as in the rest of this file.*
+
+**Verdict: a Pons v2 token is a plain ERC-20. Transfers are untaxed and unhooked — from EOAs and
+from contracts, before and after graduation — and the token has `burn(uint256)` and
+`burnFrom(address,uint256)`, both of which lower `totalSupply`. Nothing in SPEC §3.2 or §3.7
+changes for the token.**
+
+- **The tokens (MEASURED).** The probe walks the factory's `TokenLaunched` logs and picks three
+  tokens with an EOA holder: the newest, `0x73437eed7061aff03232281ac15f13650b350093` "Make
+  Robinhood Great Again" (MRGA), launched at block 96,114,912 one minute before the run, paired
+  with USDG (graduation at 8,090 USDG); one a week old,
+  `0xa15d6eb8352d2846b5edf8ca539002c07bee4e39` "MINE SHOP", block 90,314,926 (2026-10-16, 6.93
+  days), ETH pair, still on its curve; and one graduated,
+  `0x6f5f83df51ae02666843d154f5aee0d4a8c8091b` "DRIP", launched at 95,964,065 and graduated at
+  96,102,140 (tx `0x2efef8e1…935e73`) — the receipt holds the Uniswap v4 PoolManager
+  `0x8366a39c…0951`'s `Initialize` with currencies ETH / DRIP, fee 0, tick spacing 200 and hook
+  `0xe5e70264…e044` (= `factory.memeHook()`), 204,081,632.65 tokens and 4.2 ETH into the pool, and
+  81.6 M tokens into the locker (`GraduationTokensPermanentlyLocked`).
+- **The code (MEASURED).** Every token is 3,248 bytes (3,195 runtime + 53 metadata), 18
+  decimals, supply 1,000,000,000 × 1e18; not a proxy (EIP-1967 slots zero, no EIP-1167 pattern, no
+  `DELEGATECALL`); the three differ in 60 bytes and are byte-identical once each token's curve and
+  deployer addresses (immutables) are masked. Selectors present: the nine ERC-20 functions,
+  `burn(uint256)`, `burnFrom(address,uint256)`, `curve()`, `deployer()`, `launchFactory()`,
+  `getTokenInfo()`, `logo()`, `description()`, `socials()`, OpenZeppelin v5 errors, four unnamed.
+  Absent: `mint`, `pause`, `paused`, `owner`, `permit`, and every fee / tax / blacklist /
+  maxWallet / tradingEnabled name tried. Opcode census of the runtime: SLOAD 18, SSTORE 6, CALLER
+  7, LOG3 3 and **no CALL, STATICCALL, DELEGATECALL, CREATE or SELFDESTRUCT** — the token cannot
+  consult the factory, the curve or the hook. The 1 % fee (`curve.feeBps()` = 100), the creator
+  tax (`creatorTaxBps()` 0 / 180 / 300 on the three) and the snipe tax (`snipeTaxStartBps()`
+  9,900 for `snipeTaxSeconds()` 3 — three seconds, not the five the write-ups say) live in the
+  curve and the v4 hook (INFERRED from where the getters are; the simulations are the measurement).
+- **Transfers (MEASURED).** `eth_simulateV1` on publicnode on top of blocks 96,115,305 / 318 /
+  344, the first six calls replayed on the official RPC and dRPC with identical status, return
+  data and logs: 33 / 32 / 32 checks passed, 0 failed. A holder's `transfer` of 1,000,000 units to
+  a never-seen address: holder −1,000,000 exactly, fresh +1,000,000 exactly, one `Transfer` log,
+  no log from any other contract, 51,328 gas (a stock OpenZeppelin ERC-20's cold transfer). The
+  same exactness for `transferFrom` by an approved EOA (allowance 1,000,000 → 0); a transfer sent
+  by a **contract** (a 32-byte forwarder injected by state override, standing in for Gear and the
+  exchange); `transferFrom` called by a contract spender; a self-transfer; a zero-amount
+  transfer; a transfer to the curve contract; and a transfer by the token's own deployer (the
+  "developer wallet" the write-ups say can be restricted — on the newest token it moved freely).
+  `transfer` with no balance reverts `ERC20InsufficientBalance`; `transferFrom` with no allowance
+  reverts `ERC20InsufficientAllowance`.
+- **Burn (MEASURED, same simulations).** `burn(1e6)` from the holder emits `Transfer(holder →
+  0x0)` and `totalSupply` falls by exactly 1e6; `burnFrom` by an approved EOA, `burn` by a
+  contract of its own balance, and `burnFrom` by a contract spending the holder's allowance do the
+  same — four burns, `totalSupply` 1e27 → 1e27 − 4e6. A transfer to `0x…dEaD` succeeds and leaves
+  `totalSupply` unchanged; the fallback is not needed.
+- **The factory (MEASURED).** 24,177 bytes, not a proxy. `owner()` = `0x263ed295…19dd`, a
+  171-byte contract that answers Safe getters — 3 owners, threshold 2, version 1.4.1 (a Safe-shaped
+  2-of-3 multisig, INFERRED from the getters, not from source). `launchFee()` 0.0005 ETH;
+  `maxCreatorTaxBps()` 1,000; `launchEnabled()` 1; `CREATOR_FEE_RECIPIENT_TIMELOCK()` 259,200 s;
+  `CREATOR_FEE_RECIPIENT_EXECUTION_WINDOW()` 259,200 s; `GRADUATION_RESCUE_DELAY()` 604,800 s.
+  `getLaunchFeePolicy(token)` = (`0x31ea5b45…2cdb`, 3000, 5000, 100, 300): the protocol's fee
+  recipient, 30 % protocol share of the 1 % fee, 50 % of that to buyback-and-burn, 1 % fee, 3 % max
+  internal price impact (field names from the curve's getters of the same values).
+  `getLaunchedToken(token)` returns (token, curve, deployer, creator fee recipient, pair token,
+  threshold, …, creator tax bps, …). Events in 8.7 h: 686 `TokenLaunched` (≈ 1,900 launches a
+  day), 80 `CreatorFeeRecipientUpdated`, 8 `BuybackEnabledUpdated`, 6 graduations (54 in 2.4
+  days, ≈ 22 a day). Function and event names are SOURCED from api.openchain.xyz for the selectors
+  the probe's dictionary did not know (56 of 98) and each is keccak-checked — a wrong name cannot
+  match; no verdict above rests on a name.
+- **The payout (MEASURED by simulation; nothing sent).** A stranger's `setCreatorFeeRecipient`
+  reverts `OwnableUnauthorizedAccount`; a stranger's `transferCreatorFeeRecipient` reverts
+  `NotCreatorFeeRecipient()`. **The factory owner's `setCreatorFeeRecipient(token, X)` succeeds
+  but only queues:** `pendingCreatorFeeRecipient(token)` becomes (X, block time + 259,200 s, block
+  time + 518,400 s) and `getLaunchedToken` is unchanged — the three-day public delay is real, with
+  a three-day window to execute after it (`executeCreatorFeeRecipientChange` and
+  `cancelCreatorFeeRecipientChange` exist). **The current recipient's
+  `transferCreatorFeeRecipient(token, X)` succeeds at once:** the record's recipient changes and
+  `CreatorFeeRecipientUpdated(token, old, new)` fires — the creator can point the payout at a
+  contract (a treasury, a splitter) in one transaction, no delay. `setBuybackEnabled(token, bool)`
+  succeeds for the current fee recipient and reverts `NotBuybackController()` for anyone else,
+  a deployer who is no longer the recipient included.
+- **What it means here (INFERRED from the above).** §3.2's burns can be `burnFrom(player, cost)`
+  after an approval, or `burn` on tokens the contract holds, and `totalSupply` falls — no
+  dead-address sink. The exchange's escrow is a plain `transferFrom`. Nothing in the token tells an
+  EOA from a contract or a curve-phase token from a graduated one. Pons's one power over a token's
+  economics after launch is the timelocked fee-recipient change, which cannot touch balances.
+
+**Still not verified after this run:** the factory owner's other setters (launch config, snipe
+tax, pair tokens, whitelisted launchers, `rescueCurveFees`, `forceSweptGraduation`,
+`rescueSweptGraduation` — named, none exercised); what the v4 hook does at swap time (the pool
+key's fee is 0; the hook charges); any token launched after the run; Pools.trade's token.
+
 ## Could not verify
 
 - https://docs.ponsfamily.com/v2 — HTTP 403 from this sandbox by two methods; the v2 facts stand on
   the repo's 2026-10-02/03 reading and two secondary sources dated July and September.
-- Whether a Pons v2 (or Pools.trade) token's `transfer()` is untaxed: Blockscout's API and
-  DefiLlama's HTML both return 403 here. One `eth_simulateV1` transfer between two EOAs, balances
-  checked 1:1, settles it; do it before the gear contract is written.
+- ~~Whether a Pons v2 token's `transfer()` is untaxed~~ — settled 2026-10-23 (`probe/chain/pons.mjs`,
+  the section above): untaxed, unhooked, burnable, on three live tokens. Whether a Pools.trade
+  token's is: still unchecked; the same probe can be pointed at one once one is found on 4663.
 - Pools.trade's own page (JavaScript-only), its docs and terms; who holds the lock; admin powers.
 - Whether Robinhood Wallet swaps arbitrary tokens on RH Chain (its own pages conflict; not opened).
 - Any published Pons audit; Pons Labs' terms (KYC, exclusivity); Vlad.fun's status after July.

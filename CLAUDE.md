@@ -67,7 +67,9 @@ not play-to-earn: permadeath is the sink the genre never had.
 - `probe/chain/` holds read-only measurements of RH Chain (2026-10-02/03): `census.mjs` (cadence,
   fees, finality, control, infrastructure), `randomness.mjs` (block-hash predictability, the
   EIP-2935 history window, drand on the BLS precompiles) and `gas/` (a measuring-stick contract
-  set, not the contracts, with every action replayed live). Outputs go to `probe/chain/out/` and
+  set, not the contracts, with every action replayed live) and, from 2026-10-23, `pons.mjs` (three
+  Pons v2 tokens: transfers, burn and the creator-payout redirect, every call simulated, nothing
+  sent; `docs/launchpad.md` carries the reading). Outputs go to `probe/chain/out/` and
   `probe/chain/gas/out/` (gitignored). `docs/chain.md` is the reading.
 - `docs/dungeons.md`, `docs/reentry.md`, `docs/chat-trade.md` and `docs/hub.md` are design research
   for the game after the first dungeon (2026-10-05) — bigger dungeons and interactables, re-entry
@@ -127,6 +129,7 @@ cd probe/chain/gas && npm ci && node gas.mjs               # per-action gas, loc
 .venv/bin/python sim/operator_fee.py                   # operator ETH fee on repair, patched v1: 335 runs, ~30 min on 3 workers; tail -f sim/out/operator_fee.log; --repro 23 s, --report, --check
 .venv/bin/python sim/treadmill.py                      # red team A1/A2: organisation x mastery x fresh-drop budget on v1, pre-registered; 210 runs x 10,000 days, ~20 min on 3 workers; tail -f sim/out/treadmill.log; --repro, --report
 .venv/bin/python sim/run_length.py                     # E1/E4 (docs/dungeons.md): run length x per-run danger x wear on v1, pre-registered; 80 runs x 10,000 days, ~4 min on 3 workers; tail -f sim/out/run_length.log; --repro, --report
+node probe/chain/pons.mjs > probe/chain/out/pons.txt       # Pons v2 token: transfers, burn, payout redirect, all simulated read-only on three launched tokens, ~1 min
 ```
 
 ## Working agreements

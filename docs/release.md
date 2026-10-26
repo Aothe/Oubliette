@@ -82,9 +82,10 @@ What the repo knows about Pons v2 is in `docs/capital.md` §3 and `docs/launchpa
 (measured 2026-10-02/03 and sourced; the docs site refused the sandbox on 2026-10-22, so the
 mechanics below rest on those readings and must be re-read on the site before launch day).
 
-1. **Before launch day.** Verify by one simulated transfer that a Pons v2 token's `transfer()` is
-   untaxed and how it burns (`probe/chain/pons.mjs`, in progress) — our Gear and Exchange contracts
-   move and burn the token on every action. Choose the name and ticker (Appendix A: Oubliette is
+1. **Before launch day.** *Done 2026-10-23 (`probe/chain/pons.mjs`, SPEC §5):* a Pons v2 token is a plain
+   ERC-20 — transfers land exactly, from wallets and from contracts, with no tax or hook in the token
+   itself — and it has `burn` and `burnFrom`, so the game burns natively and `totalSupply` falls; the
+   1 % fee, the creator tax and the snipe tax live in the curve and the v4 hook, not in the token. Choose the name and ticker (Appendix A: Oubliette is
    the game; the ticker is open). Decide the payout recipient (an operator multisig, disclosed on
    the site). Set the creator tax to **0** — a tax on swaps is a tax on every player's way in and
    is the one thing Pons cannot lower afterwards.
@@ -98,10 +99,11 @@ mechanics below rest on those readings and must be re-read on the site before la
 3. **After graduation.** At 4.2 ETH raised the curve graduates into a Uniswap v4 pool whose
    liquidity is locked for good; every trade pays 1 %, the creator receives 0.7 % in ETH. Pons can
    redirect that payout after a public three-day delay, so the recipient is watched, not trusted.
-4. **What the token must give the contracts:** a plain ERC-20 `transfer` and `transferFrom` with
-   no tax (to be measured); a burn — `burn()` if it exists, else transfers to
-   `0x…dEaD`, which lowers circulating supply the same way (§3.2 wants supply to fall, nothing
-   more); a fixed supply with no mint (Pons tokens are born with all of it on the curve).
+4. **What the token gives the contracts (measured, item 1):** plain `transfer` and `transferFrom`;
+   `burn` and `burnFrom`, so the game calls `burnFrom(player, cost)` after an approval or burns
+   what it holds; a fixed 1 B supply with no `mint`, `pause` or owner. The payout recipient can
+   re-point itself at once (to a treasury or a splitter); only the factory's owner is held to the
+   three-day delay.
 5. **The one design item Pons makes concrete: reading the token's value for the mint price**
    (§2 "The mint price", §4). Before graduation the only price is the curve's; after it, the v4
    pool's. The contract needs one source it can read on chain — the pool's time-weighted price once
