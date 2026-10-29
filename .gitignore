@@ -24,3 +24,11 @@ art/out/
 probe/*/out/
 probe/*/*/out/
 node_modules/
+
+# working loop — story folders, run state and worktrees stay local
+/planning/*
+!/planning/_templates/
+.scratch-research/
+.claude/worktrees/
+.claude/settings.local.json
+local-dev-login.md
